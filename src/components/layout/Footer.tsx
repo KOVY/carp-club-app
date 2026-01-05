@@ -1,0 +1,50 @@
+import Link from "next/link"
+import { Fish } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+interface FooterProps {
+  className?: string
+}
+
+export function Footer({ className }: FooterProps) {
+  const currentYear = new Date().getFullYear()
+
+  return (
+    <footer className={cn("border-t bg-muted/50", className)}>
+      <div className="container py-8 md:py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Fish className="h-5 w-5 text-primary" />
+              <span className="font-semibold">Carp Club ČR</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Oficiální aplikace pro správu kaprařských závodů.
+            </p>
+          </div>
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold">Navigace</h4>
+            <nav className="flex flex-col space-y-2 text-sm text-muted-foreground">
+              <Link href="/" className="hover:text-foreground transition-colors">
+                Aktuální závody
+              </Link>
+              <Link href="/archiv" className="hover:text-foreground transition-colors">
+                Archiv závodů
+              </Link>
+            </nav>
+          </div>
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold">Kontakt</h4>
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>Carp Club ČR</p>
+              <p>info@carpclub.cz</p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
+          <p>© {currentYear} Carp Club ČR. Všechna práva vyhrazena.</p>
+        </div>
+      </div>
+    </footer>
+  )
+}

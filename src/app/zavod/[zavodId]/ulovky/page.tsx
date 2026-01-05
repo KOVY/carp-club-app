@@ -1,0 +1,216 @@
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
+import { useParams } from "next/navigation"
+import { Fish, RefreshCw } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { UlovekForm, PotvrzeniList } from "@/components/zavod"
+import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
+import { ErrorState } from "@/components/common/ErrorState"
+import { StatusMessage } from "@/components/common/StatusMessage"
+import { getUlovkyKPotvrzeni } from "@/actions/ulovky.actions"
+import { createClient } from "@/lib/supabase/client"
+import type { UlovekWithRelations, UserRole } from "@/lib/types"
+
+/**
+ * Úlovky page - Submit catches and confirm neighbor catches
+ * 
+ * Requirements:
+ * - 3.1: Create catch with weight, type, photo, timestamp
+ * - 4.1: Display catches waiting for confirmation from neighbor pegs
+ */
+export default function UlovkyPage() {
+  const params = useParams()
+  const zavodId = params.zavodId as string
+
+  const [pendingUlovky, setPendingUlovky] = useState<UlovekWithRelations[]>([])
+  const [userRole, setUserRole] = useState<UserRole | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [zavodActive, setZavodActive] = useState(false)
+
+  const fetchData = useCallback(async () => {
+    try {
+      const supabase = createClient()
+
+      // Check if user is logged in
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setError("Pro přístup k této stránce se musíte přihlásit")
+        setIsLoading(false)
+        return
+      }
+
+      // Get user role in this zavod
+      const { data: roleData } = await supabase
+        .from('zavod_role')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('zavod_id', zavodId)
+        .single()
+
+      if (roleData) {
+        setUserRole((roleData as { role: UserRole }).role)
+      } else {
+        // Check if user is team member
+        const { data: teams } = await supabase
+          .from('tymy')
+          .select('id')
+          .eq('zavod_id', zavodId)
+
+        if (teams && teams.length > 0) {
+          const teamIds = (teams as { id: string }[]).map(t => t.id)
+          const { data: membership } = await supabase
+            .from('clenove_tymu')
+            .select('role')
+            .eq('user_id', user.id)
+            .in('tym_id', teamIds)
+            .single()
+
+          if (membership) {
+            setUserRole((membership as { role: UserRole }).role)
+          }
+        }
+      }
+
+      // Check if zavod is active
+      const { data: zavod } = await supabase
+        .from('zavody')
+        .select('stav')
+        .eq('id', zavodId)
+        .single()
+
+      setZavodActive((zavod as { stav: string } | null)?.stav === 'probiha')
+
+      // Fetch pending catches for confirmation
+      const result = await getUlovkyKPotvrzeni(zavodId)
+      if (result.success && result.data) {
+        setPendingUlovky(result.data.ulovky)
+      }
+
+      setError(null)
+    } catch (err) {
+      setError("Nepodařilo se načíst data")
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
+    }
+  }, [zavodId])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await fetchData()
+  }
+
+  const handleUlovekSubmitted = () => {
+    // Refresh the pending list after submitting a catch
+    fetchData()
+  }
+
+  const handleConfirmationComplete = () => {
+    // Refresh the pending list after confirming a catch
+    fetchData()
+  }
+
+  const canSubmitCatch = userRole === 'kapitan' || userRole === 'rozhodci' || userRole === 'poradatel'
+  const canConfirmCatch = userRole === 'kapitan' || userRole === 'rozhodci' || userRole === 'poradatel'
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Fish className="h-6 w-6" />
+              Úlovky
+            </h1>
+            <p className="text-muted-foreground">Načítání...</p>
+          </div>
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <SkeletonLoader variant="card" height={400} />
+          <SkeletonLoader variant="card" height={400} />
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return <ErrorState message={error} onRetry={fetchData} />
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Fish className="h-6 w-6" />
+            Úlovky
+          </h1>
+          <p className="text-muted-foreground">
+            Zaznamenejte nový úlovek nebo potvrďte úlovky sousedních týmů
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          Obnovit
+        </Button>
+      </div>
+
+      {/* Warning if zavod is not active */}
+      {!zavodActive && (
+        <StatusMessage 
+          variant="info" 
+          title="Závod neprobíhá"
+          description="Úlovky lze zadávat pouze během aktivního závodu."
+        />
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Submit catch form */}
+        {canSubmitCatch && (
+          <div>
+            <UlovekForm
+              zavodId={zavodId}
+              onSuccess={handleUlovekSubmitted}
+              disabled={!zavodActive}
+            />
+          </div>
+        )}
+
+        {/* Pending confirmations */}
+        {canConfirmCatch && (
+          <div>
+            <PotvrzeniList
+              ulovky={pendingUlovky}
+              onConfirmationComplete={handleConfirmationComplete}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Info for users without permissions */}
+      {!canSubmitCatch && !canConfirmCatch && (
+        <div className="text-center py-12 text-muted-foreground">
+          <Fish className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p>Nemáte oprávnění k zadávání nebo potvrzování úlovků</p>
+          <p className="text-sm mt-1">
+            Pouze kapitáni týmů, rozhodčí a pořadatelé mohou pracovat s úlovky
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
