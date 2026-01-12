@@ -145,25 +145,37 @@ export async function getZavodDetail(zavodId: string): Promise<ActionResult<{
       }
     }
 
-    // Získat statistiky pomocí DB funkce
-    const { data: stats, error: statsError } = await supabase
-      .rpc('get_zavod_stats', { p_zavod_id: zavodId })
+    // Získat statistiky pomocí přímých dotazů
+    const [
+      { count: pocetTymu },
+      { count: pocetClenu },
+      { count: pocetPozvanek },
+      { count: pocetRegistrovanych },
+      { count: pocetUlovku },
+      { count: pocetPotvrzenych },
+      { count: pocetZlutychKaret },
+    ] = await Promise.all([
+      supabase.from('tymy').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
+      supabase.from('clenove_tymu').select('*', { count: 'exact', head: true })
+        .in('tym_id', (await supabase.from('tymy').select('id').eq('zavod_id', zavodId)).data?.map((t: { id: string }) => t.id) || []),
+      supabase.from('pozvanky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
+      supabase.from('pozvanky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId).eq('pouzita', true),
+      supabase.from('ulovky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
+      supabase.from('ulovky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId).eq('potvrzeno', true),
+      supabase.from('zlute_karty').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
+    ])
 
-    if (statsError) {
-      // Pokud funkce selže, vrátíme prázdné statistiky
-      const emptyStats: ZavodStats = {
-        pocet_tymu: 0,
-        pocet_clenu: 0,
-        pocet_pozvanek: 0,
-        pocet_registrovanych: 0,
-        pocet_ulovku: 0,
-        pocet_potvrzenych: 0,
-        pocet_zlutych_karet: 0,
-      }
-      return { success: true, data: { zavod, stats: emptyStats } }
+    const stats: ZavodStats = {
+      pocet_tymu: pocetTymu || 0,
+      pocet_clenu: pocetClenu || 0,
+      pocet_pozvanek: pocetPozvanek || 0,
+      pocet_registrovanych: pocetRegistrovanych || 0,
+      pocet_ulovku: pocetUlovku || 0,
+      pocet_potvrzenych: pocetPotvrzenych || 0,
+      pocet_zlutych_karet: pocetZlutychKaret || 0,
     }
 
-    return { success: true, data: { zavod, stats: stats as ZavodStats } }
+    return { success: true, data: { zavod, stats } }
   } catch (error) {
     return {
       success: false,
