@@ -62,10 +62,11 @@ export const metadata: Metadata = {
     description: 'Oficiální aplikace pro kaprařské závody v České republice. Živé výsledky, leaderboard a správa závodů.',
     images: [
       {
-        url: '/og-image.svg',
+        url: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Carp Club ČR - Kaprařské závody',
+        type: 'image/png',
       },
     ],
   },
@@ -73,7 +74,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Carp Club ČR - Kaprařské závody online',
     description: 'Oficiální aplikace pro kaprařské závody v České republice.',
-    images: ['/og-image.svg'],
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,
