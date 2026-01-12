@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { X, Fish, Home, Archive, LogIn, LogOut, Trophy, CheckCircle, Image as ImageIcon, FileText, Settings, Users, Eye } from "lucide-react"
+import { X, Fish, Home, Archive, LogIn, LogOut, Trophy, CheckCircle, Image as ImageIcon, FileText, Settings, Users, Eye, Shield, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
@@ -71,7 +71,13 @@ export function MobileMenu({
     const baseItems: NavItem[] = [
       { href: "/", label: "Závody", icon: Home, exact: true },
       { href: "/archiv", label: "Archiv", icon: Archive },
+      { href: "/zavod/demo", label: "Demo závod", icon: Play },
     ]
+
+    // Add admin link if user is logged in
+    if (user) {
+      baseItems.push({ href: "/admin", label: "Admin portál", icon: Shield })
+    }
 
     if (zavodId) {
       // Add závod-specific navigation
@@ -217,7 +223,7 @@ export function MobileMenu({
               </div>
             )}
             
-            {navItems.slice(0, 2).map((item) => {
+            {(zavodId ? navItems.slice(0, 2) : navItems).map((item) => {
               const Icon = item.icon
               return (
                 <Link

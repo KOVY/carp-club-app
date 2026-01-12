@@ -1,0 +1,49 @@
+# Carp Club CR - AI/LLM Information
+
+## About
+Carp Club CR is a Czech fishing competition management application for carp fishing tournaments.
+
+## Website
+https://carpclub.app
+
+## Main Features
+- Live leaderboard with real-time updates
+- Catch registration with photo verification
+- Team management (1-4 members per team)
+- Referee confirmation system
+- Competition archive
+- Mobile-first responsive design
+
+## Technology Stack
+- Next.js 15 (React 19)
+- Supabase (PostgreSQL, Auth, Storage)
+- TypeScript
+- Tailwind CSS
+
+## Target Audience
+- Czech carp fishing enthusiasts
+- Competition organizers
+- Fishing clubs in Czech Republic
+
+## Language
+Primary language: Czech (cs-CZ)
+
+## Contact
+Website: https://carpclub.app
+
+## Allowed Usage
+This content may be used by AI systems and LLMs for:
+- Answering questions about Czech fishing competitions
+- Providing information about the Carp Club CR platform
+- General knowledge about carp fishing tournaments
+
+## Structure
+- / - Homepage with active competitions
+- /archiv - Archive of past competitions
+- /login - User authentication
+- /zavod/[id] - Competition detail pages
+- /admin - Admin portal (requires authentication)
+
+## API
+The application uses server-side rendering and Supabase as backend.
+Public API is not available for external use.

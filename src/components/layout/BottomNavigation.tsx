@@ -81,20 +81,19 @@ export function BottomNavigation({
       },
       {
         icon: Plus,
-        label: "Přidat",
-        href: isAuthenticated ? "/zavod" : "/login",
+        label: "Demo",
+        href: "/zavod/demo",
         isHighlighted: true,
       },
       {
         icon: CheckCircle,
-        label: "Potvrzení",
-        href: isAuthenticated ? "/zavod" : "/login-potvrzeni",
-        badge: pendingCount > 0 ? pendingCount : undefined,
+        label: "Admin",
+        href: isAuthenticated ? "/admin" : "/login",
       },
       {
         icon: User,
-        label: "Profil",
-        href: isAuthenticated ? "/profil" : "/login-profil",
+        label: isAuthenticated ? "Účet" : "Přihlásit",
+        href: "/login",
       },
     ]
   }
