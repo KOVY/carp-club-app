@@ -78,7 +78,7 @@ export async function getAllZavody(): Promise<ActionResult<Zavod[]>> {
         .eq('role', 'poradatel')
 
       if (userZavody && userZavody.length > 0) {
-        const zavodIds = userZavody.map(z => z.zavod_id)
+        const zavodIds = userZavody.map((z: { zavod_id: string }) => z.zavod_id)
         query = query.in('id', zavodIds)
       } else {
         return { success: true, data: [] }
