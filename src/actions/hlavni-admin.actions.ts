@@ -41,7 +41,7 @@ async function checkAdminAccess(): Promise<{ userId: string; isHlavniAdmin: bool
     return null
   }
 
-  const isHlavniAdmin = roles.some(r => r.role === 'hlavni_admin')
+  const isHlavniAdmin = roles.some((r: { role: string }) => r.role === 'hlavni_admin')
 
   return { userId: user.id, isHlavniAdmin }
 }
