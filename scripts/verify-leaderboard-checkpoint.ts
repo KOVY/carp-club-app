@@ -95,6 +95,7 @@ function createMockLeaderboardEntry(
       sektor_id: null,
       zaplaceno: true,
       variabilni_symbol: null,
+      barva: '#3B82F6',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
