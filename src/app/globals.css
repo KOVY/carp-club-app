@@ -1,3 +1,714 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================
+   Design Tokens - Border Radius
+   MUST be outside @layer for proper specificity
+   ============================================ */
+:root {
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+  
+  /* Animation timing functions */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  
+  /* Animation durations */
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+}
+
+/* ============================================
+   Outdoor / Denní režim - TMAVÉ POZADÍ (DEFAULT)
+   Pro viditelnost na slunci - vysoký kontrast
+   Den = tmavé pozadí, vysoký kontrast
+   ============================================ */
+:root,
+:root[data-theme="outdoor"] {
+  /* Brand colors */
+  --primary: 174 62% 32%;           /* Teal #0D9488 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 213 52% 24%;         /* Tmavě modrá #1E3A5F */
+  --secondary-foreground: 0 0% 100%;
+  --accent: 25 95% 53%;             /* Oranžová CTA #F97316 */
+  --accent-foreground: 0 0% 100%;
+  
+  /* Backgrounds - TMAVÉ */
+  --background: 222 47% 11%;        /* #0F172A */
+  --foreground: 210 40% 98%;        /* #F8FAFC */
+  --surface: 217 33% 17%;           /* #1E293B */
+  --surface-glass: rgba(30, 41, 59, 0.8);
+  
+  /* Card */
+  --card: 217 33% 17%;
+  --card-foreground: 210 40% 98%;
+  
+  /* Popover */
+  --popover: 217 33% 17%;
+  --popover-foreground: 210 40% 98%;
+  
+  /* Muted */
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  
+  /* Text - SVĚTLÝ na tmavém pozadí */
+  --text-primary: 210 40% 98%;      /* #F8FAFC */
+  --text-secondary: 215 20% 80%;    /* #CBD5E1 */
+  --text-muted: 215 16% 60%;        /* #94A3B8 */
+
+  /* Status colors */
+  --success: 142 71% 45%;           /* #22C55E */
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;            /* #F59E0B */
+  --warning-foreground: 0 0% 0%;
+  --error: 0 84% 60%;               /* #EF4444 */
+  --error-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  
+  /* Embargo */
+  --embargo: 215 16% 47%;
+  --embargo-foreground: 0 0% 100%;
+  
+  /* Border & Input */
+  --border: 217 19% 27%;
+  --input: 217 19% 27%;
+  --ring: 174 62% 32%;
+  
+  --radius: 0.5rem;
+}
+
+/* ============================================
+   Night / Noční režim - SVĚTLÉ POZADÍ
+   Šetrné k očím v noci - tlumené barvy
+   Noc = světlé, tlumené barvy bez oslnění
+   ============================================ */
+:root[data-theme="night"] {
+  /* Brand colors - tlumenější */
+  --primary: 174 58% 40%;           /* #14B8A6 */
+  --primary-foreground: 174 100% 6%;
+  --secondary: 217 91% 60%;         /* #3B82F6 */
+  --secondary-foreground: 0 0% 100%;
+  --accent: 27 96% 61%;             /* #FB923C */
+  --accent-foreground: 0 0% 0%;
+  
+  /* Backgrounds - SVĚTLÉ */
+  --background: 210 40% 98%;        /* #F8FAFC */
+  --foreground: 222 47% 11%;        /* #0F172A */
+  --surface: 0 0% 100%;             /* Bílá */
+  --surface-glass: rgba(255, 255, 255, 0.8);
+  
+  /* Card */
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  
+  /* Popover */
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  
+  /* Muted */
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  
+  /* Text - TMAVÝ na světlém pozadí */
+  --text-primary: 222 47% 11%;      /* #0F172A */
+  --text-secondary: 215 19% 35%;    /* #475569 */
+  --text-muted: 215 16% 60%;        /* #94A3B8 */
+  
+  /* Status colors */
+  --success: 142 76% 36%;           /* #16A34A */
+  --success-foreground: 0 0% 100%;
+  --warning: 32 95% 44%;            /* #D97706 */
+  --warning-foreground: 0 0% 0%;
+  --error: 0 72% 51%;               /* #DC2626 */
+  --error-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  
+  /* Embargo */
+  --embargo: 220 9% 65%;
+  --embargo-foreground: 0 0% 0%;
+  
+  /* Border & Input */
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 174 58% 40%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
+
+/* Explicitní přepsání barev pro témata - mimo @layer pro vyšší specificitu */
+html[data-theme="outdoor"],
+html[data-theme="outdoor"] body {
+  background-color: #0F172A !important;
+  color: #F8FAFC !important;
+}
+
+html[data-theme="night"],
+html[data-theme="night"] body {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+}
+
+/* ============================================
+   Utility Classes - Glassmorphism
+   PRAVIDLO: POUZE pro kontejnery, NIKDY pro data
+   ============================================ */
+@layer components {
+  .glass-card {
+    background: var(--surface-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .glass-card-sm {
+    background: var(--surface-glass);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .glass-card-lg {
+    background: var(--surface-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Data display - solidní pozadí pro čitelnost */
+  .data-value {
+    background: hsl(var(--surface));
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-weight: 600;
+  }
+}
+
+/* ============================================
+   Status Badge Classes
+   Striktně oddělené od brand barev
+   ============================================ */
+@layer components {
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .status-badge-confirmed {
+    background: hsla(var(--success), 0.15);
+    color: hsl(var(--success));
+  }
+
+  .status-badge-pending {
+    background: hsla(var(--warning), 0.15);
+    color: hsl(var(--warning));
+  }
+
+  .status-badge-rejected {
+    background: hsla(var(--error), 0.15);
+    color: hsl(var(--error));
+  }
+
+  .status-badge-embargo {
+    background: hsla(var(--embargo), 0.15);
+    color: hsl(var(--embargo));
+  }
+}
+
+/* ============================================
+   Status Message Classes
+   For contextual status messages (pending, embargo, etc.)
+   Requirements: 9.1, 9.2, 9.3
+   ============================================ */
+@layer components {
+  .status-message-pending {
+    background: hsla(var(--warning), 0.1);
+    border-color: hsla(var(--warning), 0.3);
+  }
+
+  .status-message-embargo {
+    background: hsla(var(--embargo), 0.1);
+    border-color: hsla(var(--embargo), 0.3);
+  }
+
+  .status-message-unauthorized {
+    background: hsla(var(--error), 0.1);
+    border-color: hsla(var(--error), 0.3);
+  }
+
+  .status-message-error {
+    background: hsla(var(--error), 0.1);
+    border-color: hsla(var(--error), 0.3);
+  }
+
+  .status-message-success {
+    background: hsla(var(--success), 0.1);
+    border-color: hsla(var(--success), 0.3);
+  }
+
+  .status-message-info {
+    background: hsla(var(--primary), 0.1);
+    border-color: hsla(var(--primary), 0.3);
+  }
+
+  .status-message-loading {
+    background: hsla(var(--primary), 0.05);
+    border-color: hsla(var(--primary), 0.2);
+  }
+}
+
+/* ============================================
+   Theme Transition
+   Rychlá, nenápadná animace přechodu
+   ============================================ */
+@layer utilities {
+  .theme-transition {
+    transition: 
+      background-color var(--duration-normal) var(--ease-out),
+      color var(--duration-normal) var(--ease-out),
+      border-color var(--duration-normal) var(--ease-out);
+  }
+}
+
+/* ============================================
+   Hover Effects - Subtle scale and shadow
+   Requirements: 7.4, 7.6
+   ============================================ */
+@layer utilities {
+  /* Interactive card hover - subtle scale and shadow */
+  .hover-lift {
+    transition: 
+      transform var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Button hover - subtle scale */
+  .hover-scale {
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+
+  .hover-scale:active {
+    transform: scale(0.98);
+  }
+
+  /* Icon button hover - background highlight */
+  .hover-highlight {
+    transition: 
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .hover-highlight:hover {
+    background-color: hsl(var(--muted));
+  }
+
+  /* Link hover - underline animation */
+  .hover-underline {
+    position: relative;
+  }
+
+  .hover-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: hsl(var(--primary));
+    transition: width var(--duration-fast) var(--ease-out);
+  }
+
+  .hover-underline:hover::after {
+    width: 100%;
+  }
+
+  /* Glow effect for important actions */
+  .hover-glow {
+    transition: box-shadow var(--duration-fast) var(--ease-out);
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 20px hsla(var(--primary), 0.3);
+  }
+}
+
+/* ============================================
+   Animation Classes
+   ============================================ */
+@layer utilities {
+  .animate-fade-in-up {
+    animation: fadeInUp var(--duration-slow) var(--ease-out);
+  }
+
+  .animate-pulse-skeleton {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Page transition - fade animation (max 200ms) */
+  .animate-page-enter {
+    animation: pageEnter var(--duration-normal) var(--ease-out);
+  }
+
+  .animate-page-exit {
+    animation: pageExit var(--duration-normal) var(--ease-out);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Page transition keyframes - max 200ms duration */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pageExit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   Reduced Motion Support
+   Requirements: 7.7
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable specific animations */
+  .animate-page-enter,
+  .animate-page-exit,
+  .animate-fade-in-up,
+  .animate-pulse-skeleton {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Disable hover transforms */
+  .hover-lift:hover,
+  .hover-scale:hover {
+    transform: none !important;
+  }
+
+  /* Keep essential visual feedback */
+  .hover-highlight:hover {
+    background-color: hsl(var(--muted));
+  }
+}
+
+/* Utility class for motion-safe animations */
+@layer utilities {
+  .motion-safe\:animate-page-enter {
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .motion-safe\:animate-page-enter {
+      animation: pageEnter var(--duration-normal) var(--ease-out);
+    }
+  }
+
+  .motion-safe\:animate-fade-in-up {
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .motion-safe\:animate-fade-in-up {
+      animation: fadeInUp var(--duration-slow) var(--ease-out);
+    }
+  }
+
+  /* Motion-reduce utility - instant transitions */
+  .motion-reduce\:transition-none {
+    transition: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-reduce\:transition-none {
+      transition: none !important;
+    }
+  }
+}
+
+/* ============================================
+   LANDING PAGE vs APP UI SEPARATION
+   Requirements: 6.1, 6.7, 6.8
+   
+   Landing Page (/) = Marketing, wow effects allowed
+   App UI (/zavod/*) = Clean, fast, no wow effects
+   ============================================ */
+
+/* ============================================
+   Landing Page Styles (pouze pro /)
+   - Wow efekty povoleny
+   - Animované gradienty
+   - Parallax efekty
+   - Scroll animace
+   ============================================ */
+@layer components {
+  /* Landing page container - enables wow effects */
+  .landing-page {
+    /* Wow effects are enabled in this context */
+  }
+
+  .hero-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--background)) 0%,
+      hsl(210 52% 24%) 50%,
+      hsl(174 62% 32%) 100%
+    );
+  }
+
+  .hero-gradient-animated {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--background)) 0%,
+      hsl(210 52% 24% / 0.8) 30%,
+      hsl(174 62% 32% / 0.6) 60%,
+      hsl(var(--background)) 100%
+    );
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+  }
+
+  .page-gradient {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--background)) 0%,
+      hsl(var(--surface)) 100%
+    );
+  }
+}
+
+/* ============================================
+   App UI Styles (pro /zavod/*)
+   - Čisté a rychlé rozhraní
+   - BEZ wow efektů
+   - Priorita: rychlost a čitelnost
+   ============================================ */
+@layer components {
+  /* App UI container - disables wow effects, prioritizes speed */
+  .app-ui {
+    /* Clean, functional UI - no decorative animations */
+  }
+
+  /* App UI specific overrides - ensure no wow effects leak in */
+  .app-ui .hero-gradient-animated {
+    animation: none;
+    background-size: 100% 100%;
+  }
+
+  .app-ui .animate-float-slow {
+    animation: none;
+  }
+
+  /* App UI cards - solid, readable, no excessive blur */
+  .app-ui-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius-lg);
+  }
+
+  /* App UI data display - maximum readability */
+  .app-ui-data {
+    background: hsl(var(--surface));
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+  }
+}
+
+/* Hero gradient animation */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Floating animation for decorative elements */
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+}
+
+@layer utilities {
+  .animate-float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+}
+
+/* Reduced motion - disable hero animations */
+@media (prefers-reduced-motion: reduce) {
+  .hero-gradient-animated {
+    animation: none;
+    background-size: 100% 100%;
+  }
+  
+  .animate-float-slow {
+    animation: none;
+  }
+}
+
+/* ============================================
+   Bottom Navigation Styles
+   ============================================ */
+@layer components {
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: hsl(var(--surface));
+    border-top: 1px solid hsl(var(--border));
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 50;
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    color: hsl(var(--text-muted));
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .bottom-nav-item.active {
+    color: hsl(var(--primary));
+  }
+
+  .bottom-nav-item-highlighted {
+    background: hsl(var(--accent));
+    color: white;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    margin-top: -20px;
+    box-shadow: 0 4px 12px hsla(var(--accent), 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    background: hsl(var(--error));
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ============================================
+   Offline Indicator Styles
+   Requirements: 9.6
+   ============================================ */
+@layer components {
+  .offline-banner {
+    background: hsl(var(--warning) / 0.95);
+    color: hsl(var(--warning-foreground));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .offline-banner-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .offline-banner-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

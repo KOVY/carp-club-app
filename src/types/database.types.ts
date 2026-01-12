@@ -9,7 +9,7 @@ export type Json =
 
 // Enum types
 export type DruhRyby = 'kapr' | 'amur'
-export type UserRole = 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak'
+export type UserRole = 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak' | 'hlavni_admin'
 export type StavPotvrzeni = 'ceka' | 'potvrzeno' | 'zamitnuto'
 export type StavZavodu = 'priprava' | 'probiha' | 'ukoncen'
 
@@ -142,6 +142,7 @@ export interface Database {
           sektor_id: string | null
           zaplaceno: boolean
           variabilni_symbol: string | null
+          barva: string
           created_at: string
           updated_at: string
         }
@@ -154,6 +155,7 @@ export interface Database {
           sektor_id?: string | null
           zaplaceno?: boolean
           variabilni_symbol?: string | null
+          barva?: string
           created_at?: string
           updated_at?: string
         }
@@ -166,6 +168,7 @@ export interface Database {
           sektor_id?: string | null
           zaplaceno?: boolean
           variabilni_symbol?: string | null
+          barva?: string
           created_at?: string
           updated_at?: string
         }
@@ -376,6 +379,50 @@ export interface Database {
           created_at?: string
         }
       }
+      pozvanky: {
+        Row: {
+          id: string
+          zavod_id: string
+          tym_id: string | null
+          email: string
+          jmeno: string
+          telefon: string | null
+          role: UserRole
+          token: string
+          platnost_do: string
+          pouzita: boolean
+          registrovano_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          zavod_id: string
+          tym_id?: string | null
+          email: string
+          jmeno: string
+          telefon?: string | null
+          role?: UserRole
+          token?: string
+          platnost_do: string
+          pouzita?: boolean
+          registrovano_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          zavod_id?: string
+          tym_id?: string | null
+          email?: string
+          jmeno?: string
+          telefon?: string | null
+          role?: UserRole
+          token?: string
+          platnost_do?: string
+          pouzita?: boolean
+          registrovano_at?: string | null
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -384,6 +431,31 @@ export interface Database {
       calculate_tym_score: {
         Args: { p_tym_id: string }
         Returns: { skore: number; pocet_ryb: number }[]
+      }
+      register_via_invitation: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      complete_invitation_registration: {
+        Args: { p_pozvanka_id: string; p_user_id: string }
+        Returns: Json
+      }
+      get_zavod_stats: {
+        Args: { p_zavod_id: string }
+        Returns: Json
+      }
+      get_tymy_overview: {
+        Args: { p_zavod_id: string }
+        Returns: {
+          tym_id: string
+          nazev: string
+          barva: string
+          peg_cislo: number | null
+          zaplaceno: boolean
+          pocet_clenu: number
+          pocet_pozvanek: number
+          pocet_registrovanych: number
+        }[]
       }
     }
     Enums: {
@@ -412,3 +484,4 @@ export type ZlutaKarta = Tables<'zlute_karty'>
 export type ZlutaKartaPoznamka = Tables<'zlute_karty_poznamky'>
 export type AuditLog = Tables<'audit_log'>
 export type ZavodRole = Tables<'zavod_role'>
+export type Pozvanka = Tables<'pozvanky'>

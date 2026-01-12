@@ -18,6 +18,7 @@ export type {
   ZlutaKartaPoznamka,
   AuditLog,
   ZavodRole,
+  Pozvanka,
   Tables,
   InsertTables,
   UpdateTables,
@@ -35,7 +36,7 @@ export interface ClenTymuWithUser {
   id: string;
   tym_id: string;
   user_id: string;
-  role: 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak';
+  role: 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak' | 'hlavni_admin';
   created_at: string;
   user?: Profile;
 }
@@ -90,7 +91,7 @@ export interface ScoringResult {
 // Permission context type
 export interface PermissionContext {
   userId: string;
-  role: 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak';
+  role: 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak' | 'hlavni_admin';
   tymId?: string;
   pegCislo?: number;
   zavodId: string;
@@ -136,6 +137,7 @@ export interface CreateTymInput {
   nazev: string;
   kapitanId: string;
   clenoveIds?: string[];
+  barva?: string;
 }
 
 export interface ZlutaKartaInput {
@@ -149,5 +151,53 @@ export interface CreateUserInput {
   jmeno: string;
   telefon?: string;
   zavodId: string;
-  role: 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak';
+  role: 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak' | 'hlavni_admin';
 }
+
+// Pozvánka input types
+export interface CreatePozvankaInput {
+  zavodId: string;
+  tymId?: string;
+  email: string;
+  jmeno: string;
+  telefon?: string;
+  role?: 'zavodnik' | 'kapitan' | 'rozhodci';
+  platnostDo?: string;
+}
+
+// Statistiky závodu
+export interface ZavodStats {
+  pocet_tymu: number;
+  pocet_clenu: number;
+  pocet_pozvanek: number;
+  pocet_registrovanych: number;
+  pocet_ulovku: number;
+  pocet_potvrzenych: number;
+  pocet_zlutych_karet: number;
+}
+
+// Přehled týmu pro admin
+export interface TymOverview {
+  tym_id: string;
+  nazev: string;
+  barva: string;
+  peg_cislo: number | null;
+  zaplaceno: boolean;
+  pocet_clenu: number;
+  pocet_pozvanek: number;
+  pocet_registrovanych: number;
+}
+
+// Barvy týmů
+export const TEAM_COLORS = [
+  { name: 'Modrá', hex: '#3B82F6' },
+  { name: 'Červená', hex: '#EF4444' },
+  { name: 'Zelená', hex: '#22C55E' },
+  { name: 'Oranžová', hex: '#F59E0B' },
+  { name: 'Fialová', hex: '#8B5CF6' },
+  { name: 'Růžová', hex: '#EC4899' },
+  { name: 'Tyrkysová', hex: '#06B6D4' },
+  { name: 'Žlutá', hex: '#EAB308' },
+  { name: 'Indigo', hex: '#6366F1' },
+  { name: 'Limetková', hex: '#84CC16' },
+] as const;

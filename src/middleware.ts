@@ -13,6 +13,8 @@ const protectedRoutes = [
   '/zavod/*/admin',
   '/zavod/*/ulovky',
   '/zavod/*/potvrzeni',
+  '/admin',
+  '/admin/*',
 ]
 
 // Routes that are always public
@@ -23,6 +25,7 @@ const publicRoutes = [
   '/zavod/*/galerie',
   '/zavod/*/pravidla',
   '/archiv',
+  '/pozvanka/*', // Registrace přes pozvánku je veřejná
 ]
 
 // Admin-only routes (poradatel)
@@ -33,6 +36,12 @@ const adminRoutes = [
 // Referee routes (rozhodci, poradatel)
 const refereeRoutes = [
   '/zavod/*/admin',
+]
+
+// Hlavní admin routes (hlavni_admin, poradatel)
+const hlavniAdminRoutes = [
+  '/admin',
+  '/admin/*',
 ]
 
 function matchRoute(pathname: string, patterns: string[]): boolean {
@@ -88,6 +97,16 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl)
     }
 
+    // Check hlavní admin routes (/admin/*)
+    if (matchRoute(pathname, hlavniAdminRoutes)) {
+      const hasAdminAccess = await checkHlavniAdminAccess(supabase, user.id)
+      if (!hasAdminAccess) {
+        // Redirect to home if not hlavni_admin or poradatel
+        return NextResponse.redirect(new URL('/', request.url))
+      }
+      return response
+    }
+
     // Extract zavodId from URL for role checking
     const zavodIdMatch = pathname.match(/\/zavod\/([^/]+)/)
     if (zavodIdMatch) {
@@ -96,7 +115,7 @@ export async function middleware(request: NextRequest) {
       // Check admin routes
       if (matchRoute(pathname, adminRoutes)) {
         const role = await getUserRoleFromDb(supabase, user.id, zavodId)
-        if (role !== 'poradatel') {
+        if (role !== 'poradatel' && role !== 'hlavni_admin') {
           // Redirect to zavod main page if not admin
           return NextResponse.redirect(new URL(`/zavod/${zavodId}`, request.url))
         }
@@ -105,7 +124,7 @@ export async function middleware(request: NextRequest) {
       // Check referee routes
       if (matchRoute(pathname, refereeRoutes) && !matchRoute(pathname, adminRoutes)) {
         const role = await getUserRoleFromDb(supabase, user.id, zavodId)
-        if (role !== 'rozhodci' && role !== 'poradatel') {
+        if (role !== 'rozhodci' && role !== 'poradatel' && role !== 'hlavni_admin') {
           // Redirect to zavod main page if not referee or admin
           return NextResponse.redirect(new URL(`/zavod/${zavodId}`, request.url))
         }
@@ -158,6 +177,23 @@ async function getUserRoleFromDb(
   }
 
   return 'divak'
+}
+
+/**
+ * Check if user has access to hlavní admin section
+ * User must have hlavni_admin or poradatel role somewhere
+ */
+async function checkHlavniAdminAccess(
+  supabase: ReturnType<typeof createServerClient<Database>>,
+  userId: string
+): Promise<boolean> {
+  const { data: roles } = await supabase
+    .from('zavod_role')
+    .select('role')
+    .eq('user_id', userId)
+    .in('role', ['hlavni_admin', 'poradatel'])
+
+  return roles !== null && roles.length > 0
 }
 
 export const config = {

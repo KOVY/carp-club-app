@@ -1,0 +1,445 @@
+'use server'
+
+/**
+ * Hlavní Admin Server Actions
+ *
+ * Akce pro hlavního administrátora (hlavni_admin):
+ * - Správa všech závodů
+ * - Vytváření nových závodů
+ * - Přehled statistik
+ */
+
+import { createClient } from '@/lib/supabase/server'
+import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
+import type {
+  ActionResult,
+  CreateZavodInput,
+  UpdateZavodInput,
+  Zavod,
+  ZavodStats,
+} from '@/lib/types'
+
+/**
+ * Kontrola, zda je uživatel hlavní admin nebo pořadatel
+ */
+async function checkAdminAccess(): Promise<{ userId: string; isHlavniAdmin: boolean } | null> {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return null
+  }
+
+  // Zkontroluj, zda má uživatel roli hlavni_admin nebo poradatel někde
+  const { data: roles } = await supabase
+    .from('zavod_role')
+    .select('role')
+    .eq('user_id', user.id)
+    .in('role', ['hlavni_admin', 'poradatel'])
+
+  if (!roles || roles.length === 0) {
+    return null
+  }
+
+  const isHlavniAdmin = roles.some(r => r.role === 'hlavni_admin')
+
+  return { userId: user.id, isHlavniAdmin }
+}
+
+/**
+ * Získat všechny závody (pro hlavního admina)
+ */
+export async function getAllZavody(): Promise<ActionResult<Zavod[]>> {
+  try {
+    const supabase = await createClient()
+
+    const access = await checkAdminAccess()
+    if (!access) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Nemáte oprávnění pro přístup k admin sekci',
+        },
+      }
+    }
+
+    let query = supabase
+      .from('zavody')
+      .select('*')
+      .order('datum_start', { ascending: false })
+
+    // Pokud není hlavní admin, zobraz jen jeho závody
+    if (!access.isHlavniAdmin) {
+      const { data: userZavody } = await supabase
+        .from('zavod_role')
+        .select('zavod_id')
+        .eq('user_id', access.userId)
+        .eq('role', 'poradatel')
+
+      if (userZavody && userZavody.length > 0) {
+        const zavodIds = userZavody.map(z => z.zavod_id)
+        query = query.in('id', zavodIds)
+      } else {
+        return { success: true, data: [] }
+      }
+    }
+
+    const { data: zavody, error } = await query
+
+    if (error) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
+          details: { originalError: error.message },
+        },
+      }
+    }
+
+    return { success: true, data: zavody || [] }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
+
+/**
+ * Získat detail závodu se statistikami
+ */
+export async function getZavodDetail(zavodId: string): Promise<ActionResult<{
+  zavod: Zavod
+  stats: ZavodStats
+}>> {
+  try {
+    const supabase = await createClient()
+
+    const access = await checkAdminAccess()
+    if (!access) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Nemáte oprávnění pro přístup k admin sekci',
+        },
+      }
+    }
+
+    // Získat závod
+    const { data: zavod, error: zavodError } = await supabase
+      .from('zavody')
+      .select('*')
+      .eq('id', zavodId)
+      .single()
+
+    if (zavodError || !zavod) {
+      return {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Závod nenalezen',
+        },
+      }
+    }
+
+    // Získat statistiky pomocí DB funkce
+    const { data: stats, error: statsError } = await supabase
+      .rpc('get_zavod_stats', { p_zavod_id: zavodId })
+
+    if (statsError) {
+      // Pokud funkce selže, vrátíme prázdné statistiky
+      const emptyStats: ZavodStats = {
+        pocet_tymu: 0,
+        pocet_clenu: 0,
+        pocet_pozvanek: 0,
+        pocet_registrovanych: 0,
+        pocet_ulovku: 0,
+        pocet_potvrzenych: 0,
+        pocet_zlutych_karet: 0,
+      }
+      return { success: true, data: { zavod, stats: emptyStats } }
+    }
+
+    return { success: true, data: { zavod, stats: stats as ZavodStats } }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
+
+/**
+ * Vytvořit nový závod (pro hlavního admina)
+ */
+export async function createZavodAsAdmin(input: CreateZavodInput): Promise<ActionResult<{ zavodId: string }>> {
+  try {
+    const supabase = await createClient()
+
+    const access = await checkAdminAccess()
+    if (!access) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Nemáte oprávnění vytvářet závody',
+        },
+      }
+    }
+
+    // Validace
+    const { nazev, misto, datum_start, datum_end, embargo_od, pravidla, soutez_id } = input
+
+    if (!nazev || nazev.trim().length === 0) {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'Název závodu je povinný',
+        },
+      }
+    }
+
+    const startDate = new Date(datum_start)
+    const endDate = new Date(datum_end)
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'Neplatné datum',
+        },
+      }
+    }
+
+    if (endDate <= startDate) {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'Datum konce musí být po datu začátku',
+        },
+      }
+    }
+
+    // Vložit závod
+    const { data: zavod, error: insertError } = await supabase
+      .from('zavody')
+      .insert({
+        nazev: nazev.trim(),
+        misto: misto?.trim() || null,
+        datum_start,
+        datum_end,
+        embargo_od: embargo_od || null,
+        pravidla: pravidla || null,
+        soutez_id: soutez_id || null,
+        stav: 'priprava',
+      })
+      .select('id')
+      .single()
+
+    if (insertError || !zavod) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
+          details: { originalError: insertError?.message },
+        },
+      }
+    }
+
+    // Přiřadit tvůrce jako pořadatele závodu
+    const { error: roleError } = await supabase
+      .from('zavod_role')
+      .insert({
+        zavod_id: zavod.id,
+        user_id: access.userId,
+        role: 'poradatel',
+      })
+
+    if (roleError) {
+      // Zkusíme smazat závod pokud se nepodařilo přidat roli
+      await supabase.from('zavody').delete().eq('id', zavod.id)
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: 'Nepodařilo se přiřadit roli pořadatele',
+          details: { originalError: roleError.message },
+        },
+      }
+    }
+
+    return { success: true, data: { zavodId: zavod.id } }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
+
+/**
+ * Aktualizovat závod
+ */
+export async function updateZavodAsAdmin(
+  zavodId: string,
+  input: UpdateZavodInput
+): Promise<ActionResult<Zavod>> {
+  try {
+    const supabase = await createClient()
+
+    const access = await checkAdminAccess()
+    if (!access) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Nemáte oprávnění upravovat závody',
+        },
+      }
+    }
+
+    // Zkontroluj, zda má přístup k tomuto závodu
+    if (!access.isHlavniAdmin) {
+      const { data: hasAccess } = await supabase
+        .from('zavod_role')
+        .select('id')
+        .eq('zavod_id', zavodId)
+        .eq('user_id', access.userId)
+        .eq('role', 'poradatel')
+        .single()
+
+      if (!hasAccess) {
+        return {
+          success: false,
+          error: {
+            code: ErrorCodes.FORBIDDEN,
+            message: 'Nemáte oprávnění upravovat tento závod',
+          },
+        }
+      }
+    }
+
+    const { data: zavod, error } = await supabase
+      .from('zavody')
+      .update(input)
+      .eq('id', zavodId)
+      .select('*')
+      .single()
+
+    if (error || !zavod) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
+          details: { originalError: error?.message },
+        },
+      }
+    }
+
+    return { success: true, data: zavod }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
+
+/**
+ * Smazat závod (pouze hlavní admin nebo pořadatel bez týmů)
+ */
+export async function deleteZavod(zavodId: string): Promise<ActionResult<void>> {
+  try {
+    const supabase = await createClient()
+
+    const access = await checkAdminAccess()
+    if (!access) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Nemáte oprávnění mazat závody',
+        },
+      }
+    }
+
+    // Zkontroluj, zda závod existuje a nemá týmy
+    const { data: tymy } = await supabase
+      .from('tymy')
+      .select('id')
+      .eq('zavod_id', zavodId)
+      .limit(1)
+
+    if (tymy && tymy.length > 0) {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_OPERATION',
+          message: 'Nelze smazat závod s registrovanými týmy',
+        },
+      }
+    }
+
+    const { error } = await supabase
+      .from('zavody')
+      .delete()
+      .eq('id', zavodId)
+
+    if (error) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
+          details: { originalError: error.message },
+        },
+      }
+    }
+
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
+
+/**
+ * Získat seznam soutěží pro dropdown
+ */
+export async function getSouteze(): Promise<ActionResult<{ id: string; nazev: string; rok: number }[]>> {
+  try {
+    const supabase = await createClient()
+
+    const { data: souteze, error } = await supabase
+      .from('souteze')
+      .select('id, nazev, rok')
+      .order('rok', { ascending: false })
+
+    if (error) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
+        },
+      }
+    }
+
+    return { success: true, data: souteze || [] }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
