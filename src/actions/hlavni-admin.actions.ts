@@ -239,18 +239,20 @@ export async function createZavodAsAdmin(input: CreateZavodInput): Promise<Actio
     }
 
     // Vložit závod
+    const insertData = {
+      nazev: nazev.trim(),
+      misto: misto?.trim() || null,
+      datum_start,
+      datum_end,
+      embargo_od: embargo_od || null,
+      pravidla: pravidla || null,
+      soutez_id: soutez_id || null,
+      stav: 'priprava' as const,
+    }
+
     const { data: zavod, error: insertError } = await supabase
       .from('zavody')
-      .insert({
-        nazev: nazev.trim(),
-        misto: misto?.trim() || null,
-        datum_start,
-        datum_end,
-        embargo_od: embargo_od || null,
-        pravidla: pravidla || null,
-        soutez_id: soutez_id || null,
-        stav: 'priprava',
-      })
+      .insert(insertData as any)
       .select('id')
       .single()
 
