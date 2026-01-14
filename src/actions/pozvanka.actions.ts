@@ -6,13 +6,13 @@
  * Pozvánka Server Actions
  *
  * Akce pro správu pozvánek:
- * - Vytvoření pozvánky
- * - Odeslání magic linku
- * - Ověření tokenu
- * - Registrace přes pozvánku
+ * - Vytvoření pozvánky s automatickým vytvořením uživatele
+ * - Generování magic linku pro přímé přihlášení
+ * - Odeslání emailu s přímým přístupem
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import { sendInvitationEmail } from '@/lib/email/resend'
 import type {
@@ -171,14 +171,22 @@ export async function getPozvankyByTym(tymId: string): Promise<ActionResult<Pozv
 }
 
 /**
- * Vytvořit pozvánku a odeslat email
+ * Vytvořit pozvánku s automatickým vytvořením uživatele a magic linkem
+ *
+ * Tento proces:
+ * 1. Vytvoří uživatelský účet (pokud neexistuje)
+ * 2. Vytvoří profil s jménem
+ * 3. Zaregistruje uživatele do závodu
+ * 4. Vygeneruje magic link pro přímé přihlášení
+ * 5. Odešle email s přímým odkazem do závodu
  */
 export async function createPozvanka(input: CreatePozvankaInput): Promise<ActionResult<Pozvanka>> {
   try {
     const supabase = await createClient()
+    const adminClient = createAdminClient()
 
-    const userId = await checkZavodAdminAccess(input.zavodId)
-    if (!userId) {
+    const adminUserId = await checkZavodAdminAccess(input.zavodId)
+    if (!adminUserId) {
       return {
         success: false,
         error: {
@@ -189,7 +197,8 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
     }
 
     // Validace
-    if (!input.email || !input.email.includes('@')) {
+    const email = input.email?.toLowerCase().trim()
+    if (!email || !email.includes('@')) {
       return {
         success: false,
         error: {
@@ -209,6 +218,9 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
       }
     }
 
+    const jmeno = input.jmeno.trim()
+    const role = (input.role || 'zavodnik') as UserRole
+
     // Získat informace o závodu
     const { data: zavodData } = await supabase
       .from('zavody')
@@ -217,7 +229,17 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
       .single()
 
     const zavod = zavodData as { nazev: string; misto: string | null; datum_start: string; datum_end: string } | null
-    const platnostDo = input.platnostDo || zavod?.datum_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    if (!zavod) {
+      return {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Závod nenalezen',
+        },
+      }
+    }
+
+    const platnostDo = input.platnostDo || zavod.datum_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
     // Získat informace o týmu (pokud existuje)
     let tymNazev: string | null = null
@@ -230,67 +252,164 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
       tymNazev = (tymData as { nazev: string } | null)?.nazev || null
     }
 
-    const { data: pozvankaData, error } = await supabase
+    // 1. Vytvořit nebo najít uživatele
+    let targetUserId: string
+
+    // Zkontrolovat jestli uživatel existuje
+    const { data: existingUsers } = await adminClient.auth.admin.listUsers()
+    const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email)
+
+    if (existingUser) {
+      targetUserId = existingUser.id
+      console.log('User already exists:', targetUserId)
+    } else {
+      // Vytvořit nového uživatele pomocí Admin API
+      const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+        email,
+        email_confirm: true, // Automaticky potvrdit email
+        user_metadata: {
+          jmeno,
+          telefon: input.telefon?.trim() || null,
+        },
+      })
+
+      if (createError || !newUser.user) {
+        console.error('Failed to create user:', createError)
+        return {
+          success: false,
+          error: {
+            code: 'USER_CREATION_FAILED',
+            message: 'Nepodařilo se vytvořit uživatelský účet',
+            details: { originalError: createError?.message },
+          },
+        }
+      }
+
+      targetUserId = newUser.user.id
+      console.log('Created new user:', targetUserId)
+    }
+
+    // 2. Vytvořit nebo aktualizovat profil
+    await (adminClient
+      .from('profiles') as any)
+      .upsert({
+        id: targetUserId,
+        email,
+        jmeno,
+        telefon: input.telefon?.trim() || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' })
+
+    // 3. Zaregistrovat uživatele do závodu
+    await (adminClient
+      .from('zavod_role') as any)
+      .upsert({
+        zavod_id: input.zavodId,
+        user_id: targetUserId,
+        role,
+      }, { onConflict: 'zavod_id,user_id' })
+
+    // 4. Přidat do týmu (pokud je specifikován)
+    if (input.tymId) {
+      await (adminClient
+        .from('clenove_tymu') as any)
+        .upsert({
+          tym_id: input.tymId,
+          user_id: targetUserId,
+          role,
+        }, { onConflict: 'tym_id,user_id' })
+
+      // Nastavit kapitána pokud je role kapitán
+      if (role === 'kapitan') {
+        await (adminClient
+          .from('tymy') as any)
+          .update({ kapitan_id: targetUserId, updated_at: new Date().toISOString() })
+          .eq('id', input.tymId)
+      }
+    }
+
+    // 5. Vytvořit pozvánku v databázi (pro tracking)
+    const { data: pozvankaData, error: pozvankaError } = await supabase
       .from('pozvanky')
       .insert({
         zavod_id: input.zavodId,
         tym_id: input.tymId || null,
-        email: input.email.toLowerCase().trim(),
-        jmeno: input.jmeno.trim(),
+        email,
+        jmeno,
         telefon: input.telefon?.trim() || null,
-        role: (input.role || 'zavodnik') as UserRole,
+        role,
         platnost_do: platnostDo,
+        pouzita: true, // Označit jako použitou (uživatel je už zaregistrován)
+        registrovano_at: new Date().toISOString(),
       } as any)
       .select('*')
       .single()
 
-    if (error) {
-      // Kontrola duplicity
-      if (error.code === '23505') {
-        return {
-          success: false,
-          error: {
-            code: 'DUPLICATE',
-            message: 'Pozvánka pro tento email již existuje',
-          },
-        }
+    if (pozvankaError) {
+      // Kontrola duplicity - pokud pozvánka existuje, pokračuj (jen znovu pošleme email)
+      if (pozvankaError.code !== '23505') {
+        console.error('Failed to create invitation record:', pozvankaError)
       }
+    }
+
+    // 6. Vygenerovat magic link pro přímé přihlášení
+    const redirectUrl = `${getBaseUrl()}/zavod/${input.zavodId}`
+
+    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+      options: {
+        redirectTo: redirectUrl,
+      },
+    })
+
+    if (linkError || !linkData) {
+      console.error('Failed to generate magic link:', linkError)
       return {
         success: false,
         error: {
-          code: ErrorCodes.DATABASE_ERROR,
-          message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
-          details: { originalError: error.message },
+          code: 'LINK_GENERATION_FAILED',
+          message: 'Nepodařilo se vygenerovat přihlašovací odkaz',
         },
       }
     }
 
-    const pozvanka = pozvankaData as Pozvanka
+    // Magic link je v linkData.properties.action_link
+    const magicLink = linkData.properties?.action_link
 
-    // Odeslat email s pozvánkou
-    if (pozvanka && zavod) {
-      const inviteLink = `${getBaseUrl()}/pozvanka/${pozvanka.token}`
-
-      const emailResult = await sendInvitationEmail({
-        to: pozvanka.email,
-        jmeno: pozvanka.jmeno,
-        zavodNazev: zavod.nazev,
-        zavodMisto: zavod.misto,
-        zavodDatumStart: zavod.datum_start,
-        zavodDatumEnd: zavod.datum_end,
-        tymNazev,
-        role: pozvanka.role,
-        inviteLink,
-      })
-
-      if (!emailResult.success) {
-        console.warn('Failed to send invitation email:', emailResult.error)
-        // Don't fail the whole operation, just log the warning
+    if (!magicLink) {
+      console.error('No magic link in response:', linkData)
+      return {
+        success: false,
+        error: {
+          code: 'LINK_GENERATION_FAILED',
+          message: 'Nepodařilo se vygenerovat přihlašovací odkaz',
+        },
       }
     }
 
-    return { success: true, data: pozvanka }
+    // 7. Odeslat email s magic linkem
+    const emailResult = await sendInvitationEmail({
+      to: email,
+      jmeno,
+      zavodNazev: zavod.nazev,
+      zavodMisto: zavod.misto,
+      zavodDatumStart: zavod.datum_start,
+      zavodDatumEnd: zavod.datum_end,
+      tymNazev,
+      role,
+      inviteLink: magicLink, // Použít magic link místo pozvánkového linku
+    })
+
+    if (!emailResult.success) {
+      console.warn('Failed to send invitation email:', emailResult.error)
+    }
+
+    const pozvanka = (pozvankaData as unknown) as Pozvanka | null
+
+    return { success: true, data: pozvanka || { id: 'temp', email, jmeno, role } as Pozvanka }
   } catch (error) {
+    console.error('createPozvanka error:', error)
     return {
       success: false,
       error: toErrorResponse(error),
@@ -299,11 +418,12 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
 }
 
 /**
- * Znovu odeslat pozvánku (vygenerovat nový token a odeslat email)
+ * Znovu odeslat pozvánku (vygenerovat nový magic link a odeslat email)
  */
 export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<Pozvanka>> {
   try {
     const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     // Získat pozvánku s informacemi o závodu a týmu
     const { data: existingPozvankaData } = await supabase
@@ -344,64 +464,66 @@ export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<P
       }
     }
 
-    if (existingPozvanka.pouzita) {
+    const zavod = existingPozvanka.zavod
+    if (!zavod) {
       return {
         success: false,
         error: {
-          code: 'INVALID_OPERATION',
-          message: 'Pozvánka již byla použita',
+          code: 'NOT_FOUND',
+          message: 'Závod nenalezen',
         },
       }
     }
 
-    // Vygenerovat nový token a prodloužit platnost
-    const zavod = existingPozvanka.zavod
-    const newPlatnostDo = zavod?.datum_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    // Vygenerovat nový magic link
+    const redirectUrl = `${getBaseUrl()}/zavod/${existingPozvanka.zavod_id}`
 
-    const { data: pozvankaData, error } = await (supabase
-      .from('pozvanky') as any)
-      .update({
-        token: crypto.randomUUID(),
-        platnost_do: newPlatnostDo,
-      })
-      .eq('id', pozvankaId)
+    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+      type: 'magiclink',
+      email: existingPozvanka.email,
+      options: {
+        redirectTo: redirectUrl,
+      },
+    })
+
+    if (linkError || !linkData?.properties?.action_link) {
+      console.error('Failed to generate magic link:', linkError)
+      return {
+        success: false,
+        error: {
+          code: 'LINK_GENERATION_FAILED',
+          message: 'Nepodařilo se vygenerovat přihlašovací odkaz',
+        },
+      }
+    }
+
+    const magicLink = linkData.properties.action_link
+
+    // Odeslat email s novým magic linkem
+    const emailResult = await sendInvitationEmail({
+      to: existingPozvanka.email,
+      jmeno: existingPozvanka.jmeno,
+      zavodNazev: zavod.nazev,
+      zavodMisto: zavod.misto,
+      zavodDatumStart: zavod.datum_start,
+      zavodDatumEnd: zavod.datum_end,
+      tymNazev: existingPozvanka.tym?.nazev || null,
+      role: existingPozvanka.role,
+      inviteLink: magicLink,
+    })
+
+    if (!emailResult.success) {
+      console.warn('Failed to resend invitation email:', emailResult.error)
+    }
+
+    // Vrátit existující pozvánku
+    const { data: updatedPozvanka } = await supabase
+      .from('pozvanky')
       .select('*')
+      .eq('id', pozvankaId)
       .single()
 
-    if (error || !pozvankaData) {
-      return {
-        success: false,
-        error: {
-          code: ErrorCodes.DATABASE_ERROR,
-          message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
-        },
-      }
-    }
-
-    const pozvanka = pozvankaData as Pozvanka
-
-    // Odeslat email s novou pozvánkou
-    if (zavod) {
-      const inviteLink = `${getBaseUrl()}/pozvanka/${pozvanka.token}`
-
-      const emailResult = await sendInvitationEmail({
-        to: pozvanka.email,
-        jmeno: pozvanka.jmeno,
-        zavodNazev: zavod.nazev,
-        zavodMisto: zavod.misto,
-        zavodDatumStart: zavod.datum_start,
-        zavodDatumEnd: zavod.datum_end,
-        tymNazev: existingPozvanka.tym?.nazev || null,
-        role: pozvanka.role,
-        inviteLink,
-      })
-
-      if (!emailResult.success) {
-        console.warn('Failed to resend invitation email:', emailResult.error)
-      }
-    }
-
-    return { success: true, data: pozvanka }
+    return { success: true, data: (updatedPozvanka as unknown) as Pozvanka }
   } catch (error) {
     return {
       success: false,
