@@ -20,6 +20,7 @@ const protectedRoutes = [
 // Routes that are always public
 const publicRoutes = [
   '/login',
+  '/admin/login', // Separate admin login page
   '/zavod/*/verejnost',
   '/zavod/*/leaderboard',
   '/zavod/*/galerie',
