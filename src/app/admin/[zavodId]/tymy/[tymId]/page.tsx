@@ -80,7 +80,7 @@ export default function TymDetailPage({ params }: PageProps) {
 
   // Add member dialog
   const [showAddMember, setShowAddMember] = useState(false)
-  const [newMember, setNewMember] = useState({ jmeno: "", email: "", telefon: "", role: "zavodnik" as const })
+  const [newMember, setNewMember] = useState<{ jmeno: string; email: string; telefon: string; role: "zavodnik" | "kapitan" }>({ jmeno: "", email: "", telefon: "", role: "zavodnik" })
   const [isAddingMember, setIsAddingMember] = useState(false)
 
   // Resending state

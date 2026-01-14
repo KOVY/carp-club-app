@@ -21,7 +21,7 @@ interface MobileMenuProps {
   /** Optional závod context for contextual navigation */
   zavodId?: string
   /** User's role in the závod */
-  userRole?: 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak' | null
+  userRole?: 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak' | 'hlavni_admin' | null
   /** Number of pending confirmations */
   pendingCount?: number
 }

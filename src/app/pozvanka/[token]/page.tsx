@@ -10,12 +10,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { verifyPozvanka, registerViaInvitation } from "@/actions/pozvanka.actions"
 
 interface PozvankaInfo {
-  id: string
-  jmeno: string
-  email: string
-  role: string
-  pouzita: boolean
-  platnost_do: string
+  pozvanka: {
+    id: string
+    jmeno: string
+    email: string
+    role: string
+    pouzita: boolean
+    platnost_do: string
+    telefon: string | null
+    zavod_id: string
+    tym_id: string | null
+    token: string
+    registrovano_at: string | null
+    created_at: string
+  }
   zavod: {
     id: string
     nazev: string
@@ -64,10 +72,11 @@ export default function PozvankaPage({ params }: PageProps) {
     const result = await registerViaInvitation(token)
 
     if (result.success && result.data) {
+      const zavodId = result.data.zavodId
       setSuccess(true)
       // Redirect po krátké chvíli
       setTimeout(() => {
-        router.push(`/zavod/${result.data.zavodId}`)
+        router.push(`/zavod/${zavodId}`)
       }, 2000)
     } else {
       setError(result.error?.message || 'Nepodařilo se dokončit registraci')
@@ -94,7 +103,7 @@ export default function PozvankaPage({ params }: PageProps) {
     return `${formatDate(start)} - ${formatDate(end)}`
   }
 
-  const isExpired = pozvanka && new Date(pozvanka.platnost_do) < new Date()
+  const isExpired = pozvanka && new Date(pozvanka.pozvanka.platnost_do) < new Date()
 
   if (isLoading) {
     return (
@@ -132,7 +141,7 @@ export default function PozvankaPage({ params }: PageProps) {
             <CheckCircle className="h-16 w-16 mx-auto text-green-600 mb-4" />
             <h2 className="text-xl font-semibold mb-2">Registrace dokončena!</h2>
             <p className="text-muted-foreground mb-4">
-              Vítejte v závodu, {pozvanka?.jmeno}!
+              Vítejte v závodu, {pozvanka?.pozvanka.jmeno}!
             </p>
             <p className="text-sm text-muted-foreground">
               Přesměrování na stránku závodu...
@@ -165,7 +174,7 @@ export default function PozvankaPage({ params }: PageProps) {
           <div className="space-y-4">
             <div className="p-4 rounded-lg bg-muted/50">
               <p className="text-sm text-muted-foreground">Jméno</p>
-              <p className="font-semibold text-lg">{pozvanka.jmeno}</p>
+              <p className="font-semibold text-lg">{pozvanka.pozvanka.jmeno}</p>
             </div>
 
             {pozvanka.tym && (
@@ -199,14 +208,14 @@ export default function PozvankaPage({ params }: PageProps) {
             <div className="p-4 rounded-lg bg-muted/50">
               <p className="text-sm text-muted-foreground">Role</p>
               <p className="font-semibold">
-                {pozvanka.role === 'kapitan' ? 'Kapitán týmu' :
-                 pozvanka.role === 'rozhodci' ? 'Rozhodčí' : 'Závodník'}
+                {pozvanka.pozvanka.role === 'kapitan' ? 'Kapitán týmu' :
+                 pozvanka.pozvanka.role === 'rozhodci' ? 'Rozhodčí' : 'Závodník'}
               </p>
             </div>
           </div>
 
           {/* Stav pozvánky */}
-          {pozvanka.pouzita ? (
+          {pozvanka.pozvanka.pouzita ? (
             <div className="bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-lg text-center">
               <CheckCircle className="h-6 w-6 mx-auto mb-2" />
               <p className="font-semibold">Již registrováno</p>
@@ -222,7 +231,7 @@ export default function PozvankaPage({ params }: PageProps) {
               <AlertCircle className="h-6 w-6 mx-auto mb-2" />
               <p className="font-semibold">Pozvánka vypršela</p>
               <p className="text-sm mt-1">
-                Platnost pozvánky skončila {formatDate(pozvanka.platnost_do)}.
+                Platnost pozvánky skončila {formatDate(pozvanka.pozvanka.platnost_do)}.
               </p>
             </div>
           ) : (

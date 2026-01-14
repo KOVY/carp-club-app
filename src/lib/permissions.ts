@@ -13,7 +13,7 @@ import 'server-only';
 
 import type { PermissionContext } from './types';
 
-type Role = 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak';
+type Role = 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak' | 'hlavni_admin';
 
 /**
  * Check if user can submit a catch
@@ -138,6 +138,7 @@ export function getRoleLevel(role: Role): number {
     kapitan: 2,
     rozhodci: 3,
     poradatel: 4,
+    hlavni_admin: 5,
   };
   return levels[role];
 }

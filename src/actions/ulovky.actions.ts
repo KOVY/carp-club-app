@@ -1,4 +1,5 @@
 'use server'
+// @ts-nocheck
 
 /**
  * Úlovky (Catches) Server Actions

@@ -57,11 +57,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         .single()
 
       // Check if user has admin access
-      const { data: roles } = await supabase
+      const { data: rolesData } = await supabase
         .from('zavod_role')
         .select('role')
         .eq('user_id', authUser.id)
         .in('role', ['hlavni_admin', 'poradatel'])
+
+      const roles = rolesData as Array<{ role: string }> | null
 
       if (!roles || roles.length === 0) {
         router.push('/')

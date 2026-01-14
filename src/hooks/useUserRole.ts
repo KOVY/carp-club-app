@@ -58,6 +58,7 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
   kapitan: 2,
   rozhodci: 3,
   poradatel: 4,
+  hlavni_admin: 5,
 }
 
 export function useUserRole({

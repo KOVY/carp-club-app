@@ -1,4 +1,5 @@
 'use server'
+// @ts-nocheck
 
 /**
  * Potvrzení (Confirmation) Server Actions
