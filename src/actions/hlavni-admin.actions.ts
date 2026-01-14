@@ -14,6 +14,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import type {
   ActionResult,
@@ -376,11 +377,11 @@ export async function updateZavodAsAdmin(
 /**
  * Smazat závod včetně všech souvisejících dat
  * Kaskádově smaže: týmy, členy týmů, úlovky, pozvánky, role
+ * Používá admin klient pro obejití RLS
  */
 export async function deleteZavod(zavodId: string): Promise<ActionResult<void>> {
   try {
-    const supabase = await createClient()
-
+    // Ověření oprávnění
     const access = await checkAdminAccess()
     if (!access) {
       return {
@@ -392,9 +393,23 @@ export async function deleteZavod(zavodId: string): Promise<ActionResult<void>> 
       }
     }
 
+    // Použít admin klient pro mazání (obchází RLS)
+    let adminClient
+    try {
+      adminClient = createAdminClient()
+    } catch {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: 'Chybí konfigurace pro mazání. Kontaktujte administrátora.',
+        },
+      }
+    }
+
     // Nejprve smaž všechny závislé záznamy v pořadí
     // 1. Smaž členy týmů (závisí na týmech)
-    const { data: tymy } = await supabase
+    const { data: tymy } = await adminClient
       .from('tymy')
       .select('id')
       .eq('zavod_id', zavodId)
@@ -403,38 +418,58 @@ export async function deleteZavod(zavodId: string): Promise<ActionResult<void>> 
       const tymIds = tymy.map(t => (t as { id: string }).id)
 
       // Smaž členy týmů
-      await supabase
+      const { error: clenoviError } = await adminClient
         .from('clenove_tymu')
         .delete()
         .in('tym_id', tymIds)
 
+      if (clenoviError) {
+        console.error('Failed to delete team members:', clenoviError)
+      }
+
       // Smaž úlovky
-      await supabase
+      const { error: ulovkyError } = await adminClient
         .from('ulovky')
         .delete()
         .in('tym_id', tymIds)
+
+      if (ulovkyError) {
+        console.error('Failed to delete catches:', ulovkyError)
+      }
     }
 
     // 2. Smaž týmy
-    await supabase
+    const { error: tymyError } = await adminClient
       .from('tymy')
       .delete()
       .eq('zavod_id', zavodId)
 
+    if (tymyError) {
+      console.error('Failed to delete teams:', tymyError)
+    }
+
     // 3. Smaž pozvánky
-    await supabase
+    const { error: pozvankyError } = await adminClient
       .from('pozvanky')
       .delete()
       .eq('zavod_id', zavodId)
 
+    if (pozvankyError) {
+      console.error('Failed to delete invitations:', pozvankyError)
+    }
+
     // 4. Smaž role závodu
-    await supabase
+    const { error: roleError } = await adminClient
       .from('zavod_role')
       .delete()
       .eq('zavod_id', zavodId)
 
+    if (roleError) {
+      console.error('Failed to delete roles:', roleError)
+    }
+
     // 5. Nakonec smaž samotný závod
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('zavody')
       .delete()
       .eq('id', zavodId)
@@ -444,14 +479,14 @@ export async function deleteZavod(zavodId: string): Promise<ActionResult<void>> 
         success: false,
         error: {
           code: ErrorCodes.DATABASE_ERROR,
-          message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
-          details: { originalError: error.message },
+          message: `Nepodařilo se smazat závod: ${error.message}`,
         },
       }
     }
 
     return { success: true }
   } catch (error) {
+    console.error('deleteZavod error:', error)
     return {
       success: false,
       error: toErrorResponse(error),
