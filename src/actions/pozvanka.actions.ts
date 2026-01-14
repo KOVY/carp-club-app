@@ -14,12 +14,24 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
+import { sendInvitationEmail } from '@/lib/email/resend'
 import type {
   ActionResult,
   Pozvanka,
   CreatePozvankaInput,
   UserRole,
 } from '@/lib/types'
+
+// Base URL for invitation links
+const getBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+  return 'http://localhost:3000'
+}
 
 /**
  * Kontrola admin přístupu k závodu
@@ -159,7 +171,7 @@ export async function getPozvankyByTym(tymId: string): Promise<ActionResult<Pozv
 }
 
 /**
- * Vytvořit pozvánku
+ * Vytvořit pozvánku a odeslat email
  */
 export async function createPozvanka(input: CreatePozvankaInput): Promise<ActionResult<Pozvanka>> {
   try {
@@ -197,17 +209,28 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
       }
     }
 
-    // Získat datum konce závodu pro platnost pozvánky
+    // Získat informace o závodu
     const { data: zavodData } = await supabase
       .from('zavody')
-      .select('datum_end')
+      .select('nazev, misto, datum_start, datum_end')
       .eq('id', input.zavodId)
       .single()
 
-    const zavod = zavodData as { datum_end: string } | null
+    const zavod = zavodData as { nazev: string; misto: string | null; datum_start: string; datum_end: string } | null
     const platnostDo = input.platnostDo || zavod?.datum_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
-    const { data: pozvanka, error } = await supabase
+    // Získat informace o týmu (pokud existuje)
+    let tymNazev: string | null = null
+    if (input.tymId) {
+      const { data: tymData } = await supabase
+        .from('tymy')
+        .select('nazev')
+        .eq('id', input.tymId)
+        .single()
+      tymNazev = (tymData as { nazev: string } | null)?.nazev || null
+    }
+
+    const { data: pozvankaData, error } = await supabase
       .from('pozvanky')
       .insert({
         zavod_id: input.zavodId,
@@ -242,6 +265,30 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
       }
     }
 
+    const pozvanka = pozvankaData as Pozvanka
+
+    // Odeslat email s pozvánkou
+    if (pozvanka && zavod) {
+      const inviteLink = `${getBaseUrl()}/pozvanka/${pozvanka.token}`
+
+      const emailResult = await sendInvitationEmail({
+        to: pozvanka.email,
+        jmeno: pozvanka.jmeno,
+        zavodNazev: zavod.nazev,
+        zavodMisto: zavod.misto,
+        zavodDatumStart: zavod.datum_start,
+        zavodDatumEnd: zavod.datum_end,
+        tymNazev,
+        role: pozvanka.role,
+        inviteLink,
+      })
+
+      if (!emailResult.success) {
+        console.warn('Failed to send invitation email:', emailResult.error)
+        // Don't fail the whole operation, just log the warning
+      }
+    }
+
     return { success: true, data: pozvanka }
   } catch (error) {
     return {
@@ -252,16 +299,16 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
 }
 
 /**
- * Znovu odeslat pozvánku (vygenerovat nový token)
+ * Znovu odeslat pozvánku (vygenerovat nový token a odeslat email)
  */
 export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<Pozvanka>> {
   try {
     const supabase = await createClient()
 
-    // Získat pozvánku
+    // Získat pozvánku s informacemi o závodu a týmu
     const { data: existingPozvankaData } = await supabase
       .from('pozvanky')
-      .select('*, zavod:zavody(datum_end)')
+      .select('*, zavod:zavody(nazev, misto, datum_start, datum_end), tym:tymy(nazev)')
       .eq('id', pozvankaId)
       .single()
 
@@ -269,7 +316,11 @@ export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<P
       id: string
       zavod_id: string
       pouzita: boolean
-      zavod: { datum_end: string } | null
+      jmeno: string
+      email: string
+      role: string
+      zavod: { nazev: string; misto: string | null; datum_start: string; datum_end: string } | null
+      tym: { nazev: string } | null
     } | null
 
     if (!existingPozvanka) {
@@ -304,10 +355,10 @@ export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<P
     }
 
     // Vygenerovat nový token a prodloužit platnost
-    const zavod = existingPozvanka.zavod as { datum_end: string } | null
+    const zavod = existingPozvanka.zavod
     const newPlatnostDo = zavod?.datum_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
-    const { data: pozvanka, error } = await (supabase
+    const { data: pozvankaData, error } = await (supabase
       .from('pozvanky') as any)
       .update({
         token: crypto.randomUUID(),
@@ -317,13 +368,36 @@ export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<P
       .select('*')
       .single()
 
-    if (error || !pozvanka) {
+    if (error || !pozvankaData) {
       return {
         success: false,
         error: {
           code: ErrorCodes.DATABASE_ERROR,
           message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
         },
+      }
+    }
+
+    const pozvanka = pozvankaData as Pozvanka
+
+    // Odeslat email s novou pozvánkou
+    if (zavod) {
+      const inviteLink = `${getBaseUrl()}/pozvanka/${pozvanka.token}`
+
+      const emailResult = await sendInvitationEmail({
+        to: pozvanka.email,
+        jmeno: pozvanka.jmeno,
+        zavodNazev: zavod.nazev,
+        zavodMisto: zavod.misto,
+        zavodDatumStart: zavod.datum_start,
+        zavodDatumEnd: zavod.datum_end,
+        tymNazev: existingPozvanka.tym?.nazev || null,
+        role: pozvanka.role,
+        inviteLink,
+      })
+
+      if (!emailResult.success) {
+        console.warn('Failed to resend invitation email:', emailResult.error)
       }
     }
 

@@ -426,7 +426,7 @@ export default function TymDetailPage({ params }: PageProps) {
                 <DialogHeader>
                   <DialogTitle>Přidat člena týmu</DialogTitle>
                   <DialogDescription>
-                    Vyplňte údaje nového člena. Po vytvoření pozvánky zkopírujte odkaz a pošlete ho členovi.
+                    Vyplňte údaje nového člena. Na zadaný email bude automaticky odeslána pozvánka.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -483,12 +483,12 @@ export default function TymDetailPage({ params }: PageProps) {
                     {isAddingMember ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        Vytvářím...
+                        Odesílám...
                       </>
                     ) : (
                       <>
-                        <Plus className="h-4 w-4 mr-1" />
-                        Vytvořit pozvánku
+                        <Send className="h-4 w-4 mr-1" />
+                        Odeslat pozvánku
                       </>
                     )}
                   </Button>
