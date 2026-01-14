@@ -374,7 +374,8 @@ export async function updateZavodAsAdmin(
 }
 
 /**
- * Smazat závod (pouze hlavní admin nebo pořadatel bez týmů)
+ * Smazat závod včetně všech souvisejících dat
+ * Kaskádově smaže: týmy, členy týmů, úlovky, pozvánky, role
  */
 export async function deleteZavod(zavodId: string): Promise<ActionResult<void>> {
   try {
@@ -391,23 +392,48 @@ export async function deleteZavod(zavodId: string): Promise<ActionResult<void>> 
       }
     }
 
-    // Zkontroluj, zda závod existuje a nemá týmy
+    // Nejprve smaž všechny závislé záznamy v pořadí
+    // 1. Smaž členy týmů (závisí na týmech)
     const { data: tymy } = await supabase
       .from('tymy')
       .select('id')
       .eq('zavod_id', zavodId)
-      .limit(1)
 
     if (tymy && tymy.length > 0) {
-      return {
-        success: false,
-        error: {
-          code: 'INVALID_OPERATION',
-          message: 'Nelze smazat závod s registrovanými týmy',
-        },
-      }
+      const tymIds = tymy.map(t => (t as { id: string }).id)
+
+      // Smaž členy týmů
+      await supabase
+        .from('clenove_tymu')
+        .delete()
+        .in('tym_id', tymIds)
+
+      // Smaž úlovky
+      await supabase
+        .from('ulovky')
+        .delete()
+        .in('tym_id', tymIds)
     }
 
+    // 2. Smaž týmy
+    await supabase
+      .from('tymy')
+      .delete()
+      .eq('zavod_id', zavodId)
+
+    // 3. Smaž pozvánky
+    await supabase
+      .from('pozvanky')
+      .delete()
+      .eq('zavod_id', zavodId)
+
+    // 4. Smaž role závodu
+    await supabase
+      .from('zavod_role')
+      .delete()
+      .eq('zavod_id', zavodId)
+
+    // 5. Nakonec smaž samotný závod
     const { error } = await supabase
       .from('zavody')
       .delete()

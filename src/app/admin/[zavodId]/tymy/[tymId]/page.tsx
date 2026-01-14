@@ -20,6 +20,8 @@ import {
   Edit,
   Save,
   X,
+  Copy,
+  Link as LinkIcon,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -86,6 +88,26 @@ export default function TymDetailPage({ params }: PageProps) {
   // Resending state
   const [resendingId, setResendingId] = useState<string | null>(null)
   const [deletingPozvankaId, setDeletingPozvankaId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const copyInviteLink = async (token: string, pozvankaId: string) => {
+    const link = `${window.location.origin}/pozvanka/${token}`
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopiedId(pozvankaId)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea')
+      textarea.value = link
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      setCopiedId(pozvankaId)
+      setTimeout(() => setCopiedId(null), 2000)
+    }
+  }
 
   const fetchData = async () => {
     const [tymResult, pozvankyResult] = await Promise.all([
@@ -404,7 +426,7 @@ export default function TymDetailPage({ params }: PageProps) {
                 <DialogHeader>
                   <DialogTitle>Přidat člena týmu</DialogTitle>
                   <DialogDescription>
-                    Vyplňte údaje nového člena. Bude mu odeslána pozvánka emailem.
+                    Vyplňte údaje nového člena. Po vytvoření pozvánky zkopírujte odkaz a pošlete ho členovi.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -461,12 +483,12 @@ export default function TymDetailPage({ params }: PageProps) {
                     {isAddingMember ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        Odesílám...
+                        Vytvářím...
                       </>
                     ) : (
                       <>
-                        <Send className="h-4 w-4 mr-1" />
-                        Odeslat pozvánku
+                        <Plus className="h-4 w-4 mr-1" />
+                        Vytvořit pozvánku
                       </>
                     )}
                   </Button>
@@ -502,8 +524,22 @@ export default function TymDetailPage({ params }: PageProps) {
                           <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => copyInviteLink(pozvanka.token, pozvanka.id)}
+                            title="Zkopírovat odkaz"
+                            className={copiedId === pozvanka.id ? 'text-green-600' : ''}
+                          >
+                            {copiedId === pozvanka.id ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => handleResendPozvanka(pozvanka.id)}
                             disabled={resendingId === pozvanka.id}
+                            title="Vygenerovat nový token"
                           >
                             {resendingId === pozvanka.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
