@@ -183,14 +183,25 @@ export default function ArchivPage() {
   }
 
   return (
-    <div className="container py-6 space-y-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Archiv závodů</h1>
-        <p className="text-muted-foreground">
-          Prohlédněte si výsledky a statistiky minulých závodů Carp Club ČR.
-        </p>
+    <div className="space-y-6">
+      {/* Hero Header with background image */}
+      <div className="relative h-48 sm:h-56 overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1600&q=80')`,
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/60" />
+        <div className="relative z-10 container h-full flex flex-col justify-center">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Archiv závodů</h1>
+          <p className="text-muted-foreground mt-2 max-w-lg">
+            Prohlédněte si výsledky a statistiky minulých závodů Carp Club ČR.
+          </p>
+        </div>
       </div>
+
+      <div className="container space-y-6">
 
       {/* Filters */}
       <GlassCard noPadding className="p-4">
@@ -278,6 +289,7 @@ export default function ArchivPage() {
         <Button asChild variant="ghost">
           <Link href="/">← Zpět na hlavní stránku</Link>
         </Button>
+      </div>
       </div>
     </div>
   )

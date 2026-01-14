@@ -42,12 +42,21 @@ export function HeroSection({
       ref={heroRef}
       className="relative min-h-[90vh] flex items-center justify-center overflow-hidden"
     >
-      {/* Animated gradient background */}
-      <div 
-        className="absolute inset-0 hero-gradient-animated"
+      {/* Background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          transform: `translateY(${parallaxOffset}px)`,
+          backgroundImage: `url('https://images.unsplash.com/photo-1504472478235-9bc48ba4d60f?w=1920&q=80')`,
+          transform: `translateY(${parallaxOffset}px) scale(1.1)`,
         }}
+      />
+
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/70 to-background/90" />
+
+      {/* Animated gradient overlay */}
+      <div
+        className="absolute inset-0 hero-gradient-animated opacity-60"
       />
       
       {/* Decorative elements - water ripples */}
