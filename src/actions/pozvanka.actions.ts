@@ -290,7 +290,7 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
     }
 
     // 2. Vytvořit nebo aktualizovat profil
-    await (adminClient
+    const { error: profileError } = await (adminClient
       .from('profiles') as any)
       .upsert({
         id: targetUserId,
@@ -300,8 +300,14 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
         updated_at: new Date().toISOString(),
       }, { onConflict: 'id' })
 
+    if (profileError) {
+      console.error('Failed to upsert profile:', profileError)
+    } else {
+      console.log('Profile upserted successfully for user:', targetUserId, 'jmeno:', jmeno)
+    }
+
     // 3. Zaregistrovat uživatele do závodu
-    await (adminClient
+    const { error: roleError } = await (adminClient
       .from('zavod_role') as any)
       .upsert({
         zavod_id: input.zavodId,
@@ -309,15 +315,27 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
         role,
       }, { onConflict: 'zavod_id,user_id' })
 
+    if (roleError) {
+      console.error('Failed to upsert zavod_role:', roleError)
+    } else {
+      console.log('Role assigned:', role, 'for user:', targetUserId, 'in zavod:', input.zavodId)
+    }
+
     // 4. Přidat do týmu (pokud je specifikován)
     if (input.tymId) {
-      await (adminClient
+      const { error: teamError } = await (adminClient
         .from('clenove_tymu') as any)
         .upsert({
           tym_id: input.tymId,
           user_id: targetUserId,
           role,
         }, { onConflict: 'tym_id,user_id' })
+
+      if (teamError) {
+        console.error('Failed to add to team:', teamError)
+      } else {
+        console.log('User added to team:', input.tymId)
+      }
 
       // Nastavit kapitána pokud je role kapitán
       if (role === 'kapitan') {

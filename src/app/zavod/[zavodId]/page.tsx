@@ -200,8 +200,8 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
         )}
       </div>
 
-      {/* User Welcome Card - for logged in competitors */}
-      {user && userProfile && (
+      {/* User Welcome Card - for logged in users */}
+      {user && (
         <GlassCard className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
           <GlassCardContent className="py-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -211,15 +211,19 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
                   className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg"
                   style={{ backgroundColor: userTeam?.barva || 'hsl(var(--primary))' }}
                 >
-                  {userProfile.jmeno
-                    .split(' ')
-                    .map(n => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2)}
+                  {userProfile?.jmeno
+                    ? userProfile.jmeno
+                        .split(' ')
+                        .map(n => n[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2)
+                    : <UserCircle className="h-8 w-8" />}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{userProfile.jmeno}</h2>
+                  <h2 className="text-xl font-bold">
+                    {userProfile?.jmeno || user.email?.split('@')[0] || 'Uživatel'}
+                  </h2>
                   <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                     {userRole && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium text-xs">
@@ -238,10 +242,12 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
                         )}
                       </span>
                     )}
+                    {!userRole && !userTeam && (
+                      <span className="text-muted-foreground">
+                        {user.email}
+                      </span>
+                    )}
                   </div>
-                  {!userProfile.jmeno && user.email && (
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                  )}
                 </div>
               </div>
 
