@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Trophy, Plus, CheckCircle, User } from "lucide-react"
+import { Home, Trophy, Plus, CheckCircle, User, Image as ImageIcon, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
+import type { UserRole } from "@/lib/types"
 
 interface BottomNavItem {
   icon: React.ComponentType<{ className?: string }>
@@ -11,11 +12,15 @@ interface BottomNavItem {
   href: string
   badge?: number
   isHighlighted?: boolean
+  /** Roles that can see this item - if undefined, visible to all */
+  roles?: UserRole[]
 }
 
 interface BottomNavigationProps {
   /** Optional závod ID for context-aware navigation */
   zavodId?: string
+  /** User's role in the závod */
+  userRole?: UserRole | null
   /** Number of pending confirmations to show as badge */
   pendingCount?: number
   /** Whether user is authenticated */
@@ -26,17 +31,26 @@ interface BottomNavigationProps {
 
 export function BottomNavigation({
   zavodId,
+  userRole,
   pendingCount = 0,
   isAuthenticated = false,
   className,
 }: BottomNavigationProps) {
   const pathname = usePathname()
 
+  // Check if user has one of the specified roles
+  const hasRole = (roles: UserRole[] | undefined): boolean => {
+    if (!roles) return true // No restriction, visible to all
+    if (!userRole) return false
+    return roles.includes(userRole)
+  }
+
   // Build navigation items based on context
   const getNavItems = (): BottomNavItem[] => {
     if (zavodId) {
       // Context-aware navigation when in a závod
-      return [
+      // Different nav items based on user role
+      const allItems: BottomNavItem[] = [
         {
           icon: Home,
           label: "Domů",
@@ -47,17 +61,28 @@ export function BottomNavigation({
           label: "Pořadí",
           href: `/zavod/${zavodId}/leaderboard`,
         },
+        // "Přidat úlovek" - ALL team members can add catches (zavodnik, kapitan, rozhodci, poradatel)
         {
           icon: Plus,
           label: "Přidat",
           href: `/zavod/${zavodId}/ulovky`,
           isHighlighted: true,
+          roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
         },
+        // "Potvrzení" - team members can confirm catches from neighboring pegs
         {
           icon: CheckCircle,
           label: "Potvrzení",
           href: `/zavod/${zavodId}/admin`,
           badge: pendingCount > 0 ? pendingCount : undefined,
+          roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
+        },
+        // Galerie only for viewers (divak)
+        {
+          icon: ImageIcon,
+          label: "Galerie",
+          href: `/zavod/${zavodId}/galerie`,
+          roles: ['divak'],
         },
         {
           icon: User,
@@ -65,10 +90,13 @@ export function BottomNavigation({
           href: isAuthenticated ? "/profil" : "/login",
         },
       ]
+
+      // Filter items based on role
+      return allItems.filter(item => hasRole(item.roles))
     }
 
     // Default navigation when not in závod context
-    return [
+    const defaultItems: BottomNavItem[] = [
       {
         icon: Home,
         label: "Domů",
@@ -85,17 +113,21 @@ export function BottomNavigation({
         href: "/zavod/demo",
         isHighlighted: true,
       },
+      // Admin only for organizers/admins
       {
         icon: CheckCircle,
         label: "Admin",
-        href: isAuthenticated ? "/admin" : "/login",
+        href: "/admin",
+        roles: ['poradatel', 'hlavni_admin'],
       },
       {
         icon: User,
         label: isAuthenticated ? "Účet" : "Přihlásit",
-        href: "/login",
+        href: isAuthenticated ? "/profil" : "/login",
       },
     ]
+
+    return defaultItems.filter(item => hasRole(item.roles))
   }
 
   const navItems = getNavItems()

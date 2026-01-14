@@ -3,19 +3,20 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  Fish, 
-  Trophy, 
-  Image as ImageIcon, 
-  FileText, 
-  Settings, 
+import {
+  Fish,
+  Trophy,
+  Image as ImageIcon,
+  FileText,
+  Settings,
   Menu,
   X,
   Clock,
   CheckCircle,
   AlertCircle,
   Users,
-  Eye
+  Eye,
+  UserCircle
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -132,12 +133,13 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
 
   const navItems: NavItem[] = [
     { href: `/zavod/${zavodId}`, label: "Přehled", icon: <Fish className="h-4 w-4" /> },
-    { href: `/zavod/${zavodId}/ulovky`, label: "Úlovky", icon: <Fish className="h-4 w-4" />, roles: ['kapitan', 'rozhodci', 'poradatel'] },
+    { href: `/zavod/${zavodId}/ulovky`, label: "Přidat úlovek", icon: <Fish className="h-4 w-4" />, roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'] },
     { href: `/zavod/${zavodId}/leaderboard`, label: "Pořadí", icon: <Trophy className="h-4 w-4" /> },
+    { href: `/zavod/${zavodId}/admin`, label: "Potvrzení", icon: <CheckCircle className="h-4 w-4" />, roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'] },
     { href: `/zavod/${zavodId}/galerie`, label: "Galerie", icon: <ImageIcon className="h-4 w-4" /> },
     { href: `/zavod/${zavodId}/pravidla`, label: "Pravidla", icon: <FileText className="h-4 w-4" /> },
     { href: `/zavod/${zavodId}/verejnost`, label: "Veřejný přehled", icon: <Eye className="h-4 w-4" /> },
-    { href: `/zavod/${zavodId}/admin`, label: "Rozhodčí", icon: <Users className="h-4 w-4" />, roles: ['rozhodci', 'poradatel'] },
+    { href: `/zavod/${zavodId}/admin`, label: "Rozhodčí panel", icon: <Users className="h-4 w-4" />, roles: ['rozhodci', 'poradatel'] },
     { href: `/zavod/${zavodId}/admin/nastaveni`, label: "Nastavení", icon: <Settings className="h-4 w-4" />, roles: ['poradatel'] },
   ]
 
@@ -260,7 +262,7 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
       </main>
 
       {/* Bottom Navigation for Mobile */}
-      <BottomNavigationWrapper zavodId={zavodId} />
+      <BottomNavigationWrapper zavodId={zavodId} userRole={userRole} />
     </div>
   )
 }

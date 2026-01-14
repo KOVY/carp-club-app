@@ -1,13 +1,16 @@
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
-import { 
-  Calendar, 
-  MapPin, 
-  Clock, 
-  Users, 
+import Link from "next/link"
+import {
+  Calendar,
+  MapPin,
+  Clock,
+  Users,
   Fish,
   Trophy,
-  AlertTriangle
+  AlertTriangle,
+  UserCircle,
+  Plus
 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
@@ -15,8 +18,9 @@ import { GlassCard, GlassCardContent, GlassCardDescription, GlassCardHeader, Gla
 import { DataDisplay } from "@/components/ui/DataDisplay"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
 import { CompactLeaderboard, CompactBiggestFish } from "@/components/zavod"
+import { Button } from "@/components/ui/button"
 import { getLeaderboard, getNejvetsiRyby } from "@/actions/leaderboard.actions"
-import type { Zavod, Tym } from "@/lib/types"
+import type { Zavod, Tym, UserRole } from "@/lib/types"
 
 interface ZavodPageProps {
   params: Promise<{ zavodId: string }>
@@ -38,6 +42,68 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
   }
 
   const zavodData = zavod as Zavod
+
+  // Fetch current user and their info
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let userProfile: { jmeno: string; telefon: string | null } | null = null
+  let userRole: UserRole | null = null
+  let userTeam: { id: string; nazev: string; barva: string; peg: number | null } | null = null
+
+  if (user) {
+    // Fetch user profile
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('jmeno, telefon')
+      .eq('id', user.id)
+      .single()
+
+    if (profileData) {
+      userProfile = profileData as { jmeno: string; telefon: string | null }
+    }
+
+    // Fetch user role in this zavod
+    const { data: roleData } = await supabase
+      .from('zavod_role')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('zavod_id', zavodId)
+      .single()
+    userRole = (roleData as { role: UserRole } | null)?.role || null
+
+    // Fetch user's team in this zavod (via clenove_tymu)
+    // First get all teams in this zavod
+    const { data: zavodTeams } = await supabase
+      .from('tymy')
+      .select('id')
+      .eq('zavod_id', zavodId)
+
+    if (zavodTeams && zavodTeams.length > 0) {
+      const teamIds = (zavodTeams as { id: string }[]).map(t => t.id)
+
+      // Check if user is member of any team in this zavod
+      const { data: membershipData } = await supabase
+        .from('clenove_tymu')
+        .select('tym_id')
+        .eq('user_id', user.id)
+        .in('tym_id', teamIds)
+        .single()
+
+      if (membershipData) {
+        const membership = membershipData as { tym_id: string }
+        // Get team details
+        const { data: teamData } = await supabase
+          .from('tymy')
+          .select('id, nazev, barva, peg')
+          .eq('id', membership.tym_id)
+          .single()
+
+        if (teamData) {
+          userTeam = teamData as { id: string; nazev: string; barva: string; peg: number | null }
+        }
+      }
+    }
+  }
 
   // Fetch teams count
   const { count: teamsCount } = await supabase
@@ -91,6 +157,25 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
     }
   }
 
+  const getRoleText = (role: UserRole) => {
+    switch (role) {
+      case 'hlavni_admin':
+        return 'Hlavní Admin'
+      case 'poradatel':
+        return 'Pořadatel'
+      case 'rozhodci':
+        return 'Rozhodčí'
+      case 'kapitan':
+        return 'Kapitán'
+      case 'zavodnik':
+        return 'Závodník'
+      case 'divak':
+        return 'Divák'
+      default:
+        return role
+    }
+  }
+
   const isEmbargoActive = () => {
     if (!zavodData.embargo_od) return false
     const now = new Date()
@@ -98,6 +183,9 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
     const zavodEnd = new Date(zavodData.datum_end)
     return now >= embargoStart && now <= zavodEnd
   }
+
+  // Check if user can add catches
+  const canAddCatch = userRole && ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'].includes(userRole)
 
   return (
     <div className="space-y-6">
@@ -111,6 +199,65 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
           </p>
         )}
       </div>
+
+      {/* User Welcome Card - for logged in competitors */}
+      {user && userProfile && (
+        <GlassCard className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
+          <GlassCardContent className="py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                {/* Avatar with team color */}
+                <div
+                  className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                  style={{ backgroundColor: userTeam?.barva || 'hsl(var(--primary))' }}
+                >
+                  {userProfile.jmeno
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2)}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">{userProfile.jmeno}</h2>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    {userRole && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium text-xs">
+                        {getRoleText(userRole)}
+                      </span>
+                    )}
+                    {userTeam && (
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: userTeam.barva }}
+                        />
+                        <span>{userTeam.nazev}</span>
+                        {userTeam.peg && (
+                          <span className="text-muted-foreground">• Peg {userTeam.peg}</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  {!userProfile.jmeno && user.email && (
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick action - Add catch */}
+              {canAddCatch && zavodData.stav === 'probiha' && (
+                <Button asChild size="lg" className="bg-accent hover:bg-accent/90">
+                  <Link href={`/zavod/${zavodId}/ulovky`}>
+                    <Plus className="h-5 w-5 mr-2" />
+                    Přidat úlovek
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </GlassCardContent>
+        </GlassCard>
+      )}
 
       {/* Stats cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

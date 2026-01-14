@@ -74,8 +74,8 @@ export function MobileMenu({
       { href: "/zavod/demo", label: "Demo závod", icon: Play },
     ]
 
-    // Add admin link if user is logged in
-    if (user) {
+    // Add admin link only for organizers and admins (not for regular competitors)
+    if (user && userRole && ['poradatel', 'hlavni_admin'].includes(userRole)) {
       baseItems.push({ href: "/admin", label: "Admin portál", icon: Shield })
     }
 
@@ -89,27 +89,28 @@ export function MobileMenu({
         { href: `/zavod/${zavodId}/verejnost`, label: "Veřejný přehled", icon: Eye },
       ]
 
-      // Add role-specific items
-      if (userRole && ['kapitan', 'rozhodci', 'poradatel'].includes(userRole)) {
+      // Add role-specific items - ALL team members can add catches and confirm
+      if (userRole && ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'].includes(userRole)) {
         zavodItems.push({
           href: `/zavod/${zavodId}/ulovky`,
-          label: "Úlovky",
+          label: "Přidat úlovek",
           icon: Fish,
-          roles: ['kapitan', 'rozhodci', 'poradatel'],
+          roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
         })
-      }
-
-      if (userRole && ['rozhodci', 'poradatel'].includes(userRole)) {
         zavodItems.push({
           href: `/zavod/${zavodId}/admin`,
           label: "Potvrzení",
           icon: CheckCircle,
           badge: pendingCount > 0 ? pendingCount : undefined,
-          roles: ['rozhodci', 'poradatel'],
+          roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
         })
+      }
+
+      // Rozhodčí panel only for rozhodci and poradatel
+      if (userRole && ['rozhodci', 'poradatel'].includes(userRole)) {
         zavodItems.push({
           href: `/zavod/${zavodId}/admin`,
-          label: "Rozhodčí",
+          label: "Rozhodčí panel",
           icon: Users,
           roles: ['rozhodci', 'poradatel'],
         })

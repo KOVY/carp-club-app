@@ -37,7 +37,9 @@ export function Footer({ className }: FooterProps) {
             <h4 className="text-sm font-semibold">Kontakt</h4>
             <div className="text-sm text-muted-foreground space-y-1">
               <p>Carp Club ČR</p>
-              <p>info@carpclub.cz</p>
+              <a href="mailto:prorybolov@gmail.com" className="hover:text-foreground transition-colors">
+                prorybolov@gmail.com
+              </a>
             </div>
           </div>
         </div>

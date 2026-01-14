@@ -4,10 +4,13 @@ import { useEffect, useState } from "react"
 import { BottomNavigation } from "./BottomNavigation"
 import { usePendingConfirmations } from "@/hooks/usePendingConfirmations"
 import { createClient } from "@/lib/supabase/client"
+import type { UserRole } from "@/lib/types"
 
 interface BottomNavigationWrapperProps {
   /** Optional závod ID for context-aware navigation */
   zavodId?: string
+  /** User's role in the závod */
+  userRole?: UserRole | null
   /** Custom class name */
   className?: string
 }
@@ -21,6 +24,7 @@ interface BottomNavigationWrapperProps {
  */
 export function BottomNavigationWrapper({
   zavodId,
+  userRole,
   className,
 }: BottomNavigationWrapperProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -63,6 +67,7 @@ export function BottomNavigationWrapper({
   return (
     <BottomNavigation
       zavodId={zavodId}
+      userRole={userRole}
       pendingCount={pendingCount}
       isAuthenticated={isAuthenticated}
       className={className}

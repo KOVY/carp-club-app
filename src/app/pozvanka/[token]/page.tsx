@@ -72,6 +72,23 @@ export default function PozvankaPage({ params }: PageProps) {
     const result = await registerViaInvitation(token)
 
     if (result.success && result.data) {
+      // Check if user needs to sign up first (email doesn't have account yet)
+      if (result.data.needsSignup) {
+        // User needs to create an account first
+        // Redirect to login with magic link flow
+        const userEmail = result.data.email || ''
+        setError(`Pro dokončení registrace je třeba vytvořit účet. Zadejte email ${userEmail} na přihlašovací stránce.`)
+        setIsRegistering(false)
+        // Store the token for after signup
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('pendingInvitation', token)
+        }
+        setTimeout(() => {
+          router.push(`/login?email=${encodeURIComponent(userEmail)}&returnTo=/pozvanka/${token}`)
+        }, 3000)
+        return
+      }
+
       const zavodId = result.data.zavodId
       setSuccess(true)
       // Redirect po krátké chvíli
