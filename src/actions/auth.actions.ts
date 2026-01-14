@@ -277,6 +277,65 @@ export async function getCurrentUser(): Promise<ActionResult<{
 }
 
 /**
+ * Sign in with email and password (for admin)
+ */
+export async function signInWithPassword(
+  email: string,
+  password: string
+): Promise<ActionResult<{ userId: string }>> {
+  try {
+    if (!email || !password) {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'Email a heslo jsou povinné',
+        },
+      }
+    }
+
+    const supabase = await createClient()
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Neplatný email nebo heslo',
+        },
+      }
+    }
+
+    if (!data.user) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Přihlášení se nezdařilo',
+        },
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        userId: data.user.id,
+      },
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
+
+/**
  * Sign out the current user
  */
 export async function signOut(): Promise<ActionResult> {

@@ -39,13 +39,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
 
+  // Don't apply layout protection to login page
+  const isLoginPage = pathname === '/admin/login'
+
   useEffect(() => {
+    // Skip auth check for login page
+    if (isLoginPage) {
+      setIsLoading(false)
+      return
+    }
+
     const checkAccess = async () => {
       const supabase = createClient()
 
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser) {
-        router.push('/login?redirect=/admin')
+        router.push('/admin/login')
         return
       }
 
@@ -82,12 +91,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
 
     checkAccess()
-  }, [router])
+  }, [router, isLoginPage])
 
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
+  }
+
+  // For login page, just render children without admin layout
+  if (isLoginPage) {
+    return <>{children}</>
   }
 
   if (isLoading) {
