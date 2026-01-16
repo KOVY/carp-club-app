@@ -70,10 +70,9 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
   useEffect(() => {
     if (!zavodId) return
 
-    const fetchData = async () => {
-      const supabase = createClient()
-      
-      // Fetch zavod
+    const supabase = createClient()
+
+    const fetchZavod = async () => {
       const { data: zavodData } = await supabase
         .from('zavody')
         .select('*')
@@ -83,9 +82,11 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
       if (zavodData) {
         setZavod(zavodData as Zavod)
       }
+    }
 
-      // Fetch user and role
+    const fetchUserAndRole = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser()
+
       if (authUser) {
         // Get user profile
         const { data: profile } = await supabase
@@ -109,13 +110,38 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
 
         if (roleData) {
           setUserRole((roleData as { role: UserRole }).role)
+        } else {
+          setUserRole(null)
         }
+      } else {
+        setUser(null)
+        setUserRole(null)
       }
 
       setIsLoading(false)
     }
 
-    fetchData()
+    // Initial fetch
+    fetchZavod()
+    fetchUserAndRole()
+
+    // Subscribe to auth state changes (for magic link login)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email)
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          // Re-fetch user and role after sign in
+          await fetchUserAndRole()
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null)
+          setUserRole(null)
+        }
+      }
+    )
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [zavodId])
 
   // Handle sign out
