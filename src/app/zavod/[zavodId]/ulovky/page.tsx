@@ -38,19 +38,35 @@ export default function UlovkyPage() {
       // Always fetch zavod state first (doesn't require auth)
       const { data: zavod, error: zavodError } = await supabase
         .from('zavody')
-        .select('stav')
+        .select('stav, datum_start, datum_end')
         .eq('id', zavodId)
         .single()
 
-      const zavodStav = (zavod as { stav: string } | null)?.stav
-      console.log('fetchData: zavod state:', {
-        zavodId,
-        zavod,
-        error: zavodError?.message,
-        stav: zavodStav,
-        isProbiha: zavodStav === 'probiha'
-      })
-      setZavodActive(zavodStav === 'probiha')
+      // Calculate actual state based on time (not just DB value)
+      const zavodData = zavod as { stav: string; datum_start: string; datum_end: string } | null
+      let isActive = false
+
+      if (zavodData) {
+        const now = new Date()
+        const startTime = new Date(zavodData.datum_start)
+        const endTime = new Date(zavodData.datum_end)
+
+        // Competition is active if current time is between start and end
+        isActive = now >= startTime && now < endTime
+
+        console.log('fetchData: zavod state:', {
+          zavodId,
+          dbStav: zavodData.stav,
+          datum_start: zavodData.datum_start,
+          datum_end: zavodData.datum_end,
+          now: now.toISOString(),
+          isActive
+        })
+      } else {
+        console.log('fetchData: zavod not found', { zavodId, error: zavodError?.message })
+      }
+
+      setZavodActive(isActive)
 
       // Check if user is logged in
       const { data: { user } } = await supabase.auth.getUser()
