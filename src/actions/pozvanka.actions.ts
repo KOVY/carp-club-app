@@ -660,15 +660,8 @@ export async function verifyPozvanka(token: string): Promise<ActionResult<{
       }
     }
 
-    if (pozvanka.pouzita) {
-      return {
-        success: false,
-        error: {
-          code: 'ALREADY_USED',
-          message: 'Tato pozvánka již byla použita',
-        },
-      }
-    }
+    // Pokud je pozvánka použitá, stále vrátíme data, aby stránka mohla zobrazit odkaz na závod
+    // Stránka pak zobrazí "Již registrováno" s odkazem na závod
 
     if (new Date(pozvanka.platnost_do) < new Date()) {
       return {
