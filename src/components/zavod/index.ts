@@ -6,8 +6,9 @@ export { PotvrzeniList } from './PotvrzeniList'
 export { LeaderboardTable, CompactLeaderboard } from './LeaderboardTable'
 export { NejvetsiRybaCard, CompactBiggestFish } from './NejvetsiRybaCard'
 export { ZlutaKartaDialog, YellowCardBadge } from './ZlutaKartaDialog'
-export { 
-  DemoLoginPromptProvider, 
-  useDemoLoginPrompt, 
-  DemoProtectedButton 
+export {
+  DemoLoginPromptProvider,
+  useDemoLoginPrompt,
+  DemoProtectedButton
 } from './DemoLoginPrompt'
+export { AddCatchButton } from './AddCatchButton'

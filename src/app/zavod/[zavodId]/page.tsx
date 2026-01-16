@@ -1,6 +1,5 @@
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
-import Link from "next/link"
 import {
   Calendar,
   MapPin,
@@ -9,18 +8,16 @@ import {
   Fish,
   Trophy,
   AlertTriangle,
-  UserCircle,
-  Plus
+  UserCircle
 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
 import { GlassCard, GlassCardContent, GlassCardDescription, GlassCardHeader, GlassCardTitle } from "@/components/ui/GlassCard"
 import { DataDisplay } from "@/components/ui/DataDisplay"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
-import { CompactLeaderboard, CompactBiggestFish } from "@/components/zavod"
-import { Button } from "@/components/ui/button"
+import { CompactLeaderboard, CompactBiggestFish, AddCatchButton } from "@/components/zavod"
 import { getLeaderboard, getNejvetsiRyby } from "@/actions/leaderboard.actions"
-import type { Zavod, Tym, UserRole } from "@/lib/types"
+import type { Zavod, UserRole } from "@/lib/types"
 
 interface ZavodPageProps {
   params: Promise<{ zavodId: string }>
@@ -184,9 +181,6 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
     return now >= embargoStart && now <= zavodEnd
   }
 
-  // Check if user can add catches
-  const canAddCatch = userRole && ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'].includes(userRole)
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -251,15 +245,12 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
                 </div>
               </div>
 
-              {/* Quick action - Add catch */}
-              {canAddCatch && zavodData.stav === 'probiha' && (
-                <Button asChild size="lg" className="bg-accent hover:bg-accent/90">
-                  <Link href={`/zavod/${zavodId}/ulovky`}>
-                    <Plus className="h-5 w-5 mr-2" />
-                    Přidat úlovek
-                  </Link>
-                </Button>
-              )}
+              {/* Quick action - Add catch (client-side to handle hash token auth) */}
+              <AddCatchButton
+                zavodId={zavodId}
+                zavodStav={zavodData.stav}
+                serverUserRole={userRole}
+              />
             </div>
           </GlassCardContent>
         </GlassCard>
