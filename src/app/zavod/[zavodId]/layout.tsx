@@ -160,12 +160,13 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
 
   const navItems: NavItem[] = [
     { href: `/zavod/${zavodId}`, label: "Přehled", icon: <Fish className="h-4 w-4" /> },
-    { href: `/zavod/${zavodId}/ulovky`, label: "Přidat úlovek", icon: <Fish className="h-4 w-4" />, roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'] },
+    // Přidat úlovek - vždy viditelné (stránka sama ověří přihlášení a roli)
+    { href: `/zavod/${zavodId}/ulovky`, label: "Přidat úlovek", icon: <Fish className="h-4 w-4" /> },
     { href: `/zavod/${zavodId}/leaderboard`, label: "Pořadí", icon: <Trophy className="h-4 w-4" /> },
-    { href: `/zavod/${zavodId}/admin`, label: "Potvrzení", icon: <CheckCircle className="h-4 w-4" />, roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'] },
+    // Potvrzení - vždy viditelné (stránka sama ověří přihlášení)
+    { href: `/zavod/${zavodId}/admin`, label: "Potvrzení", icon: <CheckCircle className="h-4 w-4" /> },
     { href: `/zavod/${zavodId}/galerie`, label: "Galerie", icon: <ImageIcon className="h-4 w-4" /> },
     { href: `/zavod/${zavodId}/pravidla`, label: "Pravidla", icon: <FileText className="h-4 w-4" /> },
-    { href: `/zavod/${zavodId}/verejnost`, label: "Veřejný přehled", icon: <Eye className="h-4 w-4" /> },
     { href: `/zavod/${zavodId}/admin`, label: "Rozhodčí panel", icon: <Users className="h-4 w-4" />, roles: ['rozhodci', 'poradatel'] },
     { href: `/zavod/${zavodId}/admin/nastaveni`, label: "Nastavení", icon: <Settings className="h-4 w-4" />, roles: ['poradatel'] },
   ]

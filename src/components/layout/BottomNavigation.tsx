@@ -61,21 +61,19 @@ export function BottomNavigation({
           label: "Pořadí",
           href: `/zavod/${zavodId}/leaderboard`,
         },
-        // "Přidat úlovek" - ALL team members can add catches (zavodnik, kapitan, rozhodci, poradatel)
+        // "Přidat úlovek" - vždy viditelné (stránka sama ověří přihlášení a roli)
         {
           icon: Plus,
           label: "Přidat",
           href: `/zavod/${zavodId}/ulovky`,
           isHighlighted: true,
-          roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
         },
-        // "Potvrzení" - team members can confirm catches from neighboring pegs
+        // "Potvrzení" - vždy viditelné (stránka sama ověří přihlášení)
         {
           icon: CheckCircle,
           label: "Potvrzení",
           href: `/zavod/${zavodId}/admin`,
           badge: pendingCount > 0 ? pendingCount : undefined,
-          roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
         },
         // Galerie only for viewers (divak)
         {
