@@ -102,12 +102,15 @@ export default function UlovkyPage() {
 
   useEffect(() => {
     fetchData()
+  }, [fetchData])
 
-    // Listen for auth state changes (for magic link login)
+  // Separate effect for auth state changes to avoid loops
+  useEffect(() => {
     const supabase = createClient()
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // Only refetch on actual sign in, not initial session
+        if (event === 'SIGNED_IN') {
           fetchData()
         }
       }
@@ -116,7 +119,7 @@ export default function UlovkyPage() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [fetchData])
+  }, [zavodId]) // Only depend on zavodId, not fetchData
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
