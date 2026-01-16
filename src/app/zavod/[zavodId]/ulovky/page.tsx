@@ -35,6 +35,15 @@ export default function UlovkyPage() {
     try {
       const supabase = createClient()
 
+      // Always fetch zavod state first (doesn't require auth)
+      const { data: zavod } = await supabase
+        .from('zavody')
+        .select('stav')
+        .eq('id', zavodId)
+        .single()
+
+      setZavodActive((zavod as { stav: string } | null)?.stav === 'probiha')
+
       // Check if user is logged in
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -75,15 +84,6 @@ export default function UlovkyPage() {
           }
         }
       }
-
-      // Check if zavod is active
-      const { data: zavod } = await supabase
-        .from('zavody')
-        .select('stav')
-        .eq('id', zavodId)
-        .single()
-
-      setZavodActive((zavod as { stav: string } | null)?.stav === 'probiha')
 
       // Fetch pending catches for confirmation
       const result = await getUlovkyKPotvrzeni(zavodId)
