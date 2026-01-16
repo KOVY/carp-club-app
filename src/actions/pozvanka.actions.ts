@@ -346,7 +346,10 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
       }
     }
 
-    // 5. Vytvořit pozvánku v databázi (pro tracking)
+    // 5. Vytvořit pozvánku v databázi s vlastním tokenem (long-lived)
+    // Token bude platný až do konce závodu + 1 den
+    const platnostDoWithBuffer = new Date(new Date(platnostDo).getTime() + 24 * 60 * 60 * 1000).toISOString()
+
     const { data: pozvankaData, error: pozvankaError } = await supabase
       .from('pozvanky')
       .insert({
@@ -356,57 +359,65 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
         jmeno,
         telefon: input.telefon?.trim() || null,
         role,
-        platnost_do: platnostDo,
-        pouzita: true, // Označit jako použitou (uživatel je už zaregistrován)
-        registrovano_at: new Date().toISOString(),
+        platnost_do: platnostDoWithBuffer, // Platnost až do konce závodu + 1 den
+        pouzita: false, // Nebude použitá, dokud nepotvrdí registraci
+        registrovano_at: null,
       } as any)
       .select('*')
       .single()
 
     if (pozvankaError) {
-      // Kontrola duplicity - pokud pozvánka existuje, pokračuj (jen znovu pošleme email)
-      if (pozvankaError.code !== '23505') {
-        console.error('Failed to create invitation record:', pozvankaError)
+      // Kontrola duplicity - pokud pozvánka existuje, použít existující
+      if (pozvankaError.code === '23505') {
+        const { data: existingData } = await supabase
+          .from('pozvanky')
+          .select('*')
+          .eq('zavod_id', input.zavodId)
+          .eq('email', email)
+          .single()
+
+        if (existingData) {
+          const pozvanka = existingData as Pozvanka
+          const inviteLink = `${getBaseUrl()}/pozvanka/${pozvanka.token}`
+
+          // Odeslat email s existujícím tokenem
+          const emailResult = await sendInvitationEmail({
+            to: email,
+            jmeno,
+            zavodNazev: zavod.nazev,
+            zavodMisto: zavod.misto,
+            zavodDatumStart: zavod.datum_start,
+            zavodDatumEnd: zavod.datum_end,
+            tymNazev,
+            role,
+            inviteLink,
+          })
+
+          if (!emailResult.success) {
+            console.warn('Failed to send invitation email:', emailResult.error)
+          }
+
+          return { success: true, data: pozvanka }
+        }
       }
-    }
 
-    // 6. Vygenerovat magic link pro přímé přihlášení
-    const redirectUrl = `${getBaseUrl()}/zavod/${input.zavodId}`
-
-    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-      options: {
-        redirectTo: redirectUrl,
-      },
-    })
-
-    if (linkError || !linkData) {
-      console.error('Failed to generate magic link:', linkError)
+      console.error('Failed to create invitation record:', pozvankaError)
       return {
         success: false,
         error: {
-          code: 'LINK_GENERATION_FAILED',
-          message: 'Nepodařilo se vygenerovat přihlašovací odkaz',
+          code: 'DATABASE_ERROR',
+          message: 'Nepodařilo se vytvořit pozvánku',
         },
       }
     }
 
-    // Magic link je v linkData.properties.action_link
-    const magicLink = linkData.properties?.action_link
+    const pozvanka = pozvankaData as unknown as Pozvanka
 
-    if (!magicLink) {
-      console.error('No magic link in response:', linkData)
-      return {
-        success: false,
-        error: {
-          code: 'LINK_GENERATION_FAILED',
-          message: 'Nepodařilo se vygenerovat přihlašovací odkaz',
-        },
-      }
-    }
+    // 6. Vygenerovat URL s našim vlastním tokenem (místo magic linku)
+    // Tento token je long-lived a vyprší až po skončení závodu
+    const inviteLink = `${getBaseUrl()}/pozvanka/${pozvanka.token}`
 
-    // 7. Odeslat email s magic linkem
+    // 7. Odeslat email s long-lived invite linkem
     const emailResult = await sendInvitationEmail({
       to: email,
       jmeno,
@@ -416,16 +427,14 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
       zavodDatumEnd: zavod.datum_end,
       tymNazev,
       role,
-      inviteLink: magicLink, // Použít magic link místo pozvánkového linku
+      inviteLink, // Použít náš custom token místo magic linku
     })
 
     if (!emailResult.success) {
       console.warn('Failed to send invitation email:', emailResult.error)
     }
 
-    const pozvanka = (pozvankaData as unknown) as Pozvanka | null
-
-    return { success: true, data: pozvanka || { id: 'temp', email, jmeno, role } as Pozvanka }
+    return { success: true, data: pozvanka }
   } catch (error) {
     console.error('createPozvanka error:', error)
     return {
@@ -436,12 +445,11 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
 }
 
 /**
- * Znovu odeslat pozvánku (vygenerovat nový magic link a odeslat email)
+ * Znovu odeslat pozvánku (použít existující long-lived token)
  */
 export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<Pozvanka>> {
   try {
     const supabase = await createClient()
-    const adminClient = createAdminClient()
 
     // Získat pozvánku s informacemi o závodu a týmu
     const { data: existingPozvankaData } = await supabase
@@ -457,6 +465,7 @@ export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<P
       jmeno: string
       email: string
       role: string
+      token: string
       zavod: { nazev: string; misto: string | null; datum_start: string; datum_end: string } | null
       tym: { nazev: string } | null
     } | null
@@ -493,31 +502,10 @@ export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<P
       }
     }
 
-    // Vygenerovat nový magic link
-    const redirectUrl = `${getBaseUrl()}/zavod/${existingPozvanka.zavod_id}`
+    // Použít existující token (long-lived, platný až do konce závodu)
+    const inviteLink = `${getBaseUrl()}/pozvanka/${existingPozvanka.token}`
 
-    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-      type: 'magiclink',
-      email: existingPozvanka.email,
-      options: {
-        redirectTo: redirectUrl,
-      },
-    })
-
-    if (linkError || !linkData?.properties?.action_link) {
-      console.error('Failed to generate magic link:', linkError)
-      return {
-        success: false,
-        error: {
-          code: 'LINK_GENERATION_FAILED',
-          message: 'Nepodařilo se vygenerovat přihlašovací odkaz',
-        },
-      }
-    }
-
-    const magicLink = linkData.properties.action_link
-
-    // Odeslat email s novým magic linkem
+    // Odeslat email s existujícím long-lived tokenem
     const emailResult = await sendInvitationEmail({
       to: existingPozvanka.email,
       jmeno: existingPozvanka.jmeno,
@@ -527,7 +515,7 @@ export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<P
       zavodDatumEnd: zavod.datum_end,
       tymNazev: existingPozvanka.tym?.nazev || null,
       role: existingPozvanka.role,
-      inviteLink: magicLink,
+      inviteLink,
     })
 
     if (!emailResult.success) {
@@ -722,7 +710,7 @@ export async function verifyPozvanka(token: string): Promise<ActionResult<{
 }
 
 /**
- * Registrace přes pozvánku
+ * Registrace přes pozvánku s automatickým přihlášením
  */
 export async function registerViaInvitation(token: string): Promise<ActionResult<{
   zavodId: string
@@ -730,9 +718,11 @@ export async function registerViaInvitation(token: string): Promise<ActionResult
   needsSignup: boolean
   email?: string
   jmeno?: string
+  magicLink?: string
 }>> {
   try {
     const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     // Zavolat DB funkci
     const { data, error } = await (supabase
@@ -771,6 +761,24 @@ export async function registerViaInvitation(token: string): Promise<ActionResult
       }
     }
 
+    // Pokud uživatel existuje, vygenerovat magic link pro přihlášení
+    let magicLink: string | undefined
+    if (result.email && !result.needs_signup) {
+      const redirectUrl = `${getBaseUrl()}/zavod/${result.zavod_id}`
+
+      const { data: linkData } = await adminClient.auth.admin.generateLink({
+        type: 'magiclink',
+        email: result.email,
+        options: {
+          redirectTo: redirectUrl,
+        },
+      })
+
+      if (linkData?.properties?.action_link) {
+        magicLink = linkData.properties.action_link
+      }
+    }
+
     return {
       success: true,
       data: {
@@ -779,6 +787,7 @@ export async function registerViaInvitation(token: string): Promise<ActionResult
         needsSignup: result.needs_signup || false,
         email: result.email,
         jmeno: result.jmeno,
+        magicLink,
       },
     }
   } catch (error) {

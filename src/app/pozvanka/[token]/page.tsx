@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Fish, Users, Calendar, MapPin, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { Fish, Calendar, MapPin, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -89,12 +89,21 @@ export default function PozvankaPage({ params }: PageProps) {
         return
       }
 
-      const zavodId = result.data.zavodId
-      setSuccess(true)
-      // Redirect po krátké chvíli
-      setTimeout(() => {
-        router.push(`/zavod/${zavodId}`)
-      }, 2000)
+      // User account exists - automatically log them in with magic link
+      if (result.data.magicLink) {
+        setSuccess(true)
+        // Redirect to the magic link which will auto-login and redirect to zavod
+        setTimeout(() => {
+          window.location.href = result.data.magicLink!
+        }, 1000)
+      } else {
+        // Fallback: redirect to zavod page (user should already be logged in)
+        const zavodId = result.data.zavodId
+        setSuccess(true)
+        setTimeout(() => {
+          router.push(`/zavod/${zavodId}`)
+        }, 2000)
+      }
     } else {
       setError(result.error?.message || 'Nepodařilo se dokončit registraci')
       setIsRegistering(false)
