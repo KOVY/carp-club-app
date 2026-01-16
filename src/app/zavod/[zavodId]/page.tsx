@@ -183,15 +183,23 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">{zavodData.nazev}</h1>
-        {zavodData.misto && (
-          <p className="text-muted-foreground flex items-center gap-2 mt-1">
-            <MapPin className="h-4 w-4" />
-            {zavodData.misto}
-          </p>
-        )}
+      {/* Header with Add Catch button */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">{zavodData.nazev}</h1>
+          {zavodData.misto && (
+            <p className="text-muted-foreground flex items-center gap-2 mt-1">
+              <MapPin className="h-4 w-4" />
+              {zavodData.misto}
+            </p>
+          )}
+        </div>
+        {/* Add Catch Button - always visible for logged in users with role */}
+        <AddCatchButton
+          zavodId={zavodId}
+          zavodStav={zavodData.stav}
+          serverUserRole={userRole}
+        />
       </div>
 
       {/* User Welcome Card - for logged in users */}

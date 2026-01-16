@@ -101,6 +101,20 @@ export default function UlovkyPage() {
 
   useEffect(() => {
     fetchData()
+
+    // Listen for auth state changes (for magic link login)
+    const supabase = createClient()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event) => {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          fetchData()
+        }
+      }
+    )
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [fetchData])
 
   const handleRefresh = async () => {
@@ -118,7 +132,9 @@ export default function UlovkyPage() {
     fetchData()
   }
 
-  const canSubmitCatch = userRole === 'kapitan' || userRole === 'rozhodci' || userRole === 'poradatel'
+  // Závodníci a kapitáni mohou přidávat úlovky, rozhodčí a pořadatelé také
+  const canSubmitCatch = userRole === 'zavodnik' || userRole === 'kapitan' || userRole === 'rozhodci' || userRole === 'poradatel'
+  // Pouze kapitáni, rozhodčí a pořadatelé mohou potvrzovat úlovky sousedních týmů
   const canConfirmCatch = userRole === 'kapitan' || userRole === 'rozhodci' || userRole === 'poradatel'
 
   if (isLoading) {
