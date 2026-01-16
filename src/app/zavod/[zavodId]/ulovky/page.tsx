@@ -69,7 +69,9 @@ export default function UlovkyPage() {
       setZavodActive(isActive)
 
       // Check if user is logged in
+      console.log('fetchData: checking user...')
       const { data: { user } } = await supabase.auth.getUser()
+      console.log('fetchData: user:', user?.email)
       if (!user) {
         // User not logged in - don't show error, just show "no permissions" state
         // This allows the page to work with magic link auth flow
@@ -78,17 +80,22 @@ export default function UlovkyPage() {
       }
 
       // Get user role in this zavod
-      const { data: roleData } = await supabase
+      console.log('fetchData: getting role for user', user.id, 'in zavod', zavodId)
+      const { data: roleData, error: roleError } = await supabase
         .from('zavod_role')
         .select('role')
         .eq('user_id', user.id)
         .eq('zavod_id', zavodId)
         .single()
 
+      console.log('fetchData: role result:', { roleData, error: roleError?.message })
+
       if (roleData) {
         setUserRole((roleData as { role: UserRole }).role)
+        console.log('fetchData: set userRole to', (roleData as { role: UserRole }).role)
       } else {
         // Check if user is team member
+        console.log('fetchData: no zavod_role, checking team membership...')
         const { data: teams } = await supabase
           .from('tymy')
           .select('id')
@@ -103,6 +110,7 @@ export default function UlovkyPage() {
             .in('tym_id', teamIds)
             .single()
 
+          console.log('fetchData: team membership:', membership)
           if (membership) {
             setUserRole((membership as { role: UserRole }).role)
           }
@@ -110,7 +118,9 @@ export default function UlovkyPage() {
       }
 
       // Fetch pending catches for confirmation
+      console.log('fetchData: fetching pending catches...')
       const result = await getUlovkyKPotvrzeni(zavodId)
+      console.log('fetchData: pending catches result:', result.success)
       if (result.success && result.data) {
         setPendingUlovky(result.data.ulovky)
       }
