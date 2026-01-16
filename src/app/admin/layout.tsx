@@ -6,19 +6,14 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   Fish,
   Trophy,
-  Users,
-  Settings,
   Menu,
   X,
-  Plus,
   Home,
   LogOut,
-  ChevronRight,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher"
-import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 
 interface AdminLayoutProps {
@@ -122,7 +117,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center">
@@ -225,9 +220,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       )}
 
       {/* Main content */}
-      <main className="container py-6">
+      <main className="flex-1 container py-6">
         {children}
       </main>
-    </div>
+    </>
   )
 }

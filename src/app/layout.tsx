@@ -2,9 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
-import { HeaderWrapper } from '@/components/layout/HeaderWrapper'
-import { Footer } from '@/components/layout/Footer'
-import { GlobalBottomNavigation } from '@/components/layout/GlobalBottomNavigation'
+import { RootLayoutClient } from '@/components/layout/RootLayoutClient'
 import { ThemeProvider } from '@/components/providers'
 import { OfflineIndicator } from '@/components/common'
 
@@ -99,12 +97,9 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen flex flex-col theme-transition bg-background text-foreground`} suppressHydrationWarning>
         <ThemeProvider defaultTheme="outdoor">
           <OfflineIndicator position="top" showRetry />
-          <HeaderWrapper />
-          <main className="flex-1 pb-16 md:pb-0">
+          <RootLayoutClient>
             {children}
-          </main>
-          <Footer className="hidden md:block" />
-          <GlobalBottomNavigation />
+          </RootLayoutClient>
           <Toaster />
         </ThemeProvider>
       </body>
