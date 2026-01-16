@@ -48,45 +48,50 @@ export function AuthCallbackHandler() {
         const supabase = createClient()
         console.log('AuthCallbackHandler: Calling setSession...')
 
+        // Clean URL FIRST before anything else to prevent re-processing
+        const cleanUrl = window.location.pathname + window.location.search
+        window.history.replaceState(null, '', cleanUrl)
+        console.log('AuthCallbackHandler: URL cleaned')
+
         // Set session with tokens
-        const { data, error: sessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        })
+        // Use try-catch with timeout to prevent hanging
+        try {
+          const sessionPromise = supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
 
-        console.log('AuthCallbackHandler: setSession result:', {
-          hasSession: !!data?.session,
-          user: data?.session?.user?.email,
-          error: sessionError?.message
-        })
+          // Add timeout of 5 seconds
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Session timeout')), 5000)
+          })
 
-        if (sessionError) {
-          console.error('AuthCallbackHandler: setSession error:', sessionError)
-          setError(`Chyba přihlášení: ${sessionError.message}`)
-          setIsProcessing(false)
+          const { data, error: sessionError } = await Promise.race([
+            sessionPromise,
+            timeoutPromise
+          ]) as Awaited<typeof sessionPromise>
 
-          // Clean URL even on error
-          const cleanUrl = window.location.pathname + window.location.search
-          window.history.replaceState(null, '', cleanUrl)
-          return
+          console.log('AuthCallbackHandler: setSession result:', {
+            hasSession: !!data?.session,
+            user: data?.session?.user?.email,
+            error: sessionError?.message
+          })
+
+          if (sessionError) {
+            console.error('AuthCallbackHandler: setSession error:', sessionError)
+            // Don't show error, just reload - session might still be set via onAuthStateChange
+          }
+
+          if (data?.session) {
+            console.log('AuthCallbackHandler: Success! User:', data.session.user.email)
+          }
+        } catch (timeoutErr) {
+          console.log('AuthCallbackHandler: Session call timed out, reloading anyway')
         }
 
-        if (data?.session) {
-          console.log('AuthCallbackHandler: Success! User:', data.session.user.email)
-
-          // Clean URL first
-          const cleanUrl = window.location.pathname + window.location.search
-          window.history.replaceState(null, '', cleanUrl)
-
-          // Reload page to apply new session
-          console.log('AuthCallbackHandler: Reloading page...')
-          window.location.reload()
-        } else {
-          console.log('AuthCallbackHandler: No session created')
-          setError('Session nebyla vytvořena')
-          setIsProcessing(false)
-          processingRef.current = false
-        }
+        // Always reload to apply session
+        console.log('AuthCallbackHandler: Reloading page...')
+        window.location.reload()
       } catch (err) {
         console.error('AuthCallbackHandler: Exception:', err)
         setError(`Neočekávaná chyba: ${err}`)
