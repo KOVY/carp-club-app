@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 /**
@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 export function AuthCallbackHandler() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const processingRef = useRef(false)
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -17,8 +18,12 @@ export function AuthCallbackHandler() {
       const hash = window.location.hash
       if (!hash || !hash.includes('access_token=')) return
 
-      // Prevent double processing
-      if (isProcessing) return
+      // Prevent double processing using ref (survives re-renders)
+      if (processingRef.current) {
+        console.log('AuthCallbackHandler: Already processing, skipping...')
+        return
+      }
+      processingRef.current = true
       setIsProcessing(true)
       setError(null)
 
@@ -69,28 +74,29 @@ export function AuthCallbackHandler() {
         if (data?.session) {
           console.log('AuthCallbackHandler: Success! User:', data.session.user.email)
 
-          // Clean URL
+          // Clean URL first
           const cleanUrl = window.location.pathname + window.location.search
           window.history.replaceState(null, '', cleanUrl)
 
-          // Short delay then reload
-          setTimeout(() => {
-            window.location.reload()
-          }, 100)
+          // Reload page to apply new session
+          console.log('AuthCallbackHandler: Reloading page...')
+          window.location.reload()
         } else {
+          console.log('AuthCallbackHandler: No session created')
           setError('Session nebyla vytvořena')
           setIsProcessing(false)
+          processingRef.current = false
         }
       } catch (err) {
         console.error('AuthCallbackHandler: Exception:', err)
         setError(`Neočekávaná chyba: ${err}`)
         setIsProcessing(false)
+        processingRef.current = false
       }
     }
 
-    // Small delay to ensure component is mounted
-    const timer = setTimeout(handleAuthCallback, 50)
-    return () => clearTimeout(timer)
+    // Start processing immediately
+    handleAuthCallback()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) {
