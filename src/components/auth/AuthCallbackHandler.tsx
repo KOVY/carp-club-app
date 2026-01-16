@@ -5,15 +5,10 @@ import { createClient } from '@/lib/supabase/client'
 
 /**
  * Client component that handles magic link tokens from URL hash.
- *
- * When Supabase sends a magic link, the token is in the URL hash fragment
- * (e.g., #access_token=...). This component:
- * 1. Detects the hash fragment
- * 2. Parses tokens and sets the session
- * 3. Cleans URL and reloads page
  */
 export function AuthCallbackHandler() {
   const [isProcessing, setIsProcessing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -22,56 +17,96 @@ export function AuthCallbackHandler() {
       const hash = window.location.hash
       if (!hash || !hash.includes('access_token=')) return
 
+      // Prevent double processing
+      if (isProcessing) return
       setIsProcessing(true)
-      console.log('AuthCallbackHandler: Processing magic link token...')
+      setError(null)
+
+      console.log('AuthCallbackHandler: Starting...')
 
       try {
-        // Parse tokens from hash fragment
         const hashParams = new URLSearchParams(hash.substring(1))
         const accessToken = hashParams.get('access_token')
         const refreshToken = hashParams.get('refresh_token')
 
+        console.log('AuthCallbackHandler: Tokens found:', {
+          hasAccess: !!accessToken,
+          hasRefresh: !!refreshToken
+        })
+
         if (!accessToken || !refreshToken) {
-          console.error('AuthCallbackHandler: Missing tokens in hash')
+          setError('Chybějící tokeny v URL')
           setIsProcessing(false)
           return
         }
 
         const supabase = createClient()
 
-        // Set the session using the tokens from URL
-        const { data, error } = await supabase.auth.setSession({
+        // Set session with tokens
+        const { data, error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         })
 
-        if (error) {
-          console.error('AuthCallbackHandler: Error setting session:', error)
+        console.log('AuthCallbackHandler: setSession result:', {
+          hasSession: !!data?.session,
+          error: sessionError?.message
+        })
+
+        if (sessionError) {
+          console.error('AuthCallbackHandler: setSession error:', sessionError)
+          setError(`Chyba přihlášení: ${sessionError.message}`)
           setIsProcessing(false)
+
+          // Clean URL even on error
+          const cleanUrl = window.location.pathname + window.location.search
+          window.history.replaceState(null, '', cleanUrl)
           return
         }
 
-        if (data.session) {
-          console.log('AuthCallbackHandler: Session established for:', data.session.user.email)
+        if (data?.session) {
+          console.log('AuthCallbackHandler: Success! User:', data.session.user.email)
 
-          // Clean URL by removing hash fragment
+          // Clean URL
           const cleanUrl = window.location.pathname + window.location.search
           window.history.replaceState(null, '', cleanUrl)
 
-          // Reload to refresh server components with new session
-          window.location.reload()
+          // Short delay then reload
+          setTimeout(() => {
+            window.location.reload()
+          }, 100)
         } else {
-          console.log('AuthCallbackHandler: No session established')
+          setError('Session nebyla vytvořena')
           setIsProcessing(false)
         }
       } catch (err) {
-        console.error('AuthCallbackHandler: Unexpected error:', err)
+        console.error('AuthCallbackHandler: Exception:', err)
+        setError(`Neočekávaná chyba: ${err}`)
         setIsProcessing(false)
       }
     }
 
-    handleAuthCallback()
-  }, [])
+    // Small delay to ensure component is mounted
+    const timer = setTimeout(handleAuthCallback, 50)
+    return () => clearTimeout(timer)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="text-center max-w-md p-6 bg-background border rounded-lg shadow-lg">
+          <p className="text-destructive font-medium mb-2">Chyba přihlášení</p>
+          <p className="text-muted-foreground text-sm mb-4">{error}</p>
+          <button
+            onClick={() => window.location.href = window.location.pathname}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
+          >
+            Zkusit znovu
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (isProcessing) {
     return (
