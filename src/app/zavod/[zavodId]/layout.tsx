@@ -86,7 +86,9 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
     }
 
     const fetchUserAndRole = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
+      console.log('fetchUserAndRole: Starting...')
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+      console.log('fetchUserAndRole: getUser result:', { email: authUser?.email, error: authError?.message })
 
       if (authUser) {
         // Get user profile
@@ -102,12 +104,14 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
           name: (profile as { jmeno?: string } | null)?.jmeno,
         })
 
-        const { data: roleData } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .from('zavod_role')
           .select('role')
           .eq('user_id', authUser.id)
           .eq('zavod_id', zavodId)
           .single()
+
+        console.log('fetchUserAndRole: Role result:', { role: roleData, error: roleError?.message })
 
         if (roleData) {
           setUserRole((roleData as { role: UserRole }).role)
