@@ -9,9 +9,10 @@ import type { ZavodRole, Tym, ClenTymu } from '@/lib/types'
  */
 
 // Routes that require authentication
+// Note: /zavod/*/ulovky is NOT protected here - the page handles auth itself
+// This allows magic link users to access it before session is fully established
 const protectedRoutes = [
-  '/zavod/*/admin',
-  '/zavod/*/ulovky',
+  '/zavod/*/admin/nastaveni', // Only settings require strict middleware auth
   '/zavod/*/potvrzeni',
   '/admin',
   '/admin/*',

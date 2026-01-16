@@ -38,7 +38,8 @@ export default function UlovkyPage() {
       // Check if user is logged in
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        setError("Pro přístup k této stránce se musíte přihlásit")
+        // User not logged in - don't show error, just show "no permissions" state
+        // This allows the page to work with magic link auth flow
         setIsLoading(false)
         return
       }
