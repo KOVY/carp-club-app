@@ -41,6 +41,7 @@ export function AuthCallbackHandler() {
         }
 
         const supabase = createClient()
+        console.log('AuthCallbackHandler: Calling setSession...')
 
         // Set session with tokens
         const { data, error: sessionError } = await supabase.auth.setSession({
@@ -50,6 +51,7 @@ export function AuthCallbackHandler() {
 
         console.log('AuthCallbackHandler: setSession result:', {
           hasSession: !!data?.session,
+          user: data?.session?.user?.email,
           error: sessionError?.message
         })
 

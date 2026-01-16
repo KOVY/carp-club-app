@@ -621,9 +621,12 @@ export async function verifyPozvanka(token: string): Promise<ActionResult<{
   tym: { id: string; nazev: string; barva: string } | null
 }>> {
   try {
-    const supabase = await createClient()
+    // Use admin client to bypass RLS - this is a public verification endpoint
+    const adminClient = createAdminClient()
 
-    const { data: pozvankaData, error } = await supabase
+    console.log('verifyPozvanka: Looking for token:', token)
+
+    const { data: pozvankaData, error } = await adminClient
       .from('pozvanky')
       .select(`
         *,
@@ -632,6 +635,8 @@ export async function verifyPozvanka(token: string): Promise<ActionResult<{
       `)
       .eq('token', token)
       .single()
+
+    console.log('verifyPozvanka: Result:', { found: !!pozvankaData, error: error?.message })
 
     const pozvanka = pozvankaData as {
       id: string
