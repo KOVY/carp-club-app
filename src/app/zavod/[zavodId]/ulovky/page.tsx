@@ -42,8 +42,15 @@ export default function UlovkyPage() {
         .eq('id', zavodId)
         .single()
 
-      console.log('fetchData: zavod state:', { zavod, error: zavodError?.message, stav: (zavod as { stav: string } | null)?.stav })
-      setZavodActive((zavod as { stav: string } | null)?.stav === 'probiha')
+      const zavodStav = (zavod as { stav: string } | null)?.stav
+      console.log('fetchData: zavod state:', {
+        zavodId,
+        zavod,
+        error: zavodError?.message,
+        stav: zavodStav,
+        isProbiha: zavodStav === 'probiha'
+      })
+      setZavodActive(zavodStav === 'probiha')
 
       // Check if user is logged in
       const { data: { user } } = await supabase.auth.getUser()
