@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button"
 import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher"
 import { BottomNavigationWrapper } from "@/components/layout/BottomNavigationWrapper"
 import { MobileMenu } from "@/components/layout/MobileMenu"
+import { AuthCallbackHandler } from "@/components/auth"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { usePendingConfirmations } from "@/hooks/usePendingConfirmations"
@@ -216,6 +217,9 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0 app-ui">
+      {/* Auth callback handler for magic link tokens */}
+      <AuthCallbackHandler />
+
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center">
