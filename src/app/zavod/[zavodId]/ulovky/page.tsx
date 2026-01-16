@@ -191,9 +191,9 @@ export default function UlovkyPage() {
       </div>
 
       {/* Warning if zavod is not active */}
-      {!zavodActive && (
-        <StatusMessage 
-          variant="info" 
+      {!zavodActive && !isLoading && (
+        <StatusMessage
+          variant="info"
           title="Závod neprobíhá"
           description="Úlovky lze zadávat pouze během aktivního závodu."
         />
