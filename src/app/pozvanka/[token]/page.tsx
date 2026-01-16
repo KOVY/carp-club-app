@@ -90,15 +90,17 @@ export default function PozvankaPage({ params }: PageProps) {
       }
 
       // User account exists - automatically log them in with magic link
-      if (result.data.magicLink) {
+      const magicLink = result.data?.magicLink
+      const zavodId = result.data?.zavodId
+
+      if (magicLink) {
         setSuccess(true)
         // Redirect to the magic link which will auto-login and redirect to zavod
         setTimeout(() => {
-          window.location.href = result.data.magicLink!
+          window.location.href = magicLink
         }, 1000)
-      } else {
+      } else if (zavodId) {
         // Fallback: redirect to zavod page (user should already be logged in)
-        const zavodId = result.data.zavodId
         setSuccess(true)
         setTimeout(() => {
           router.push(`/zavod/${zavodId}`)
