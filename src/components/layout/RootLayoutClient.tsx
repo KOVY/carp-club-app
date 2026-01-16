@@ -12,16 +12,17 @@ interface RootLayoutClientProps {
 export function RootLayoutClient({ children }: RootLayoutClientProps) {
   const pathname = usePathname()
 
-  // Hide the default header/footer/navigation for admin pages
-  // Admin pages have their own layout with custom header
+  // Hide the default header/footer/navigation for pages that have their own layout
   const isAdminPage = pathname?.startsWith('/admin')
+  const isZavodPage = pathname?.startsWith('/zavod/')
+  const isPozvankaPage = pathname?.startsWith('/pozvanka/')
 
-  if (isAdminPage) {
-    // For admin pages, just render children without the landing page navigation
+  // Admin and Zavod pages have their own custom layouts
+  if (isAdminPage || isZavodPage || isPozvankaPage) {
     return <>{children}</>
   }
 
-  // For all other pages, render the full layout with header, footer, and navigation
+  // For public pages (landing, archiv), render the full layout
   return (
     <>
       <HeaderWrapper />
