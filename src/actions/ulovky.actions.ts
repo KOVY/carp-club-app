@@ -1,9 +1,8 @@
 'use server'
-// @ts-nocheck
 
 /**
  * Úlovky (Catches) Server Actions
- * 
+ *
  * Requirements:
  * - 3.1: Create catch record with weight, type, photo, and automatic timestamp
  * - 3.2: Reject catches with weight < 5kg
@@ -18,6 +17,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import { MIN_VAHA_KG, DRUHY_RYB } from '@/lib/constants'
 import { canSubmitUlovek } from '@/lib/permissions'
@@ -131,16 +131,8 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
       }
     }
 
-    // Check if zavod is active
-    if (zavodData.stav !== 'probiha') {
-      return {
-        success: false,
-        error: {
-          code: ErrorCodes.ZAVOD_NOT_ACTIVE,
-          message: ErrorMessages[ErrorCodes.ZAVOD_NOT_ACTIVE],
-        },
-      }
-    }
+    // Note: We already validated time window above, no need to check stav
+    // The stav field may not be updated in real-time
 
     // Requirement 3.4: Get user's team in this zavod
     const { data: teams } = await supabase
@@ -161,14 +153,60 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
     const teamIds = (teams as Pick<Tym, 'id' | 'peg_cislo'>[]).map(t => t.id)
 
     // Find user's team membership
-    const { data: membership, error: membershipError } = await supabase
+    const { data: membershipResult } = await supabase
       .from('clenove_tymu')
       .select('tym_id, role')
       .eq('user_id', user.id)
       .in('tym_id', teamIds)
       .single()
 
-    if (membershipError || !membership) {
+    let membershipData: Pick<ClenTymu, 'tym_id' | 'role'> | null = membershipResult as Pick<ClenTymu, 'tym_id' | 'role'> | null
+
+    // If no team membership, check zavod_role and try to find team via invitation
+    if (!membershipData) {
+      const { data: zavodRole } = await supabase
+        .from('zavod_role')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('zavod_id', zavodId)
+        .single()
+
+      if (zavodRole) {
+        // User has zavod_role, get their email and find team via invitation
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', user.id)
+          .single()
+
+        const profile = profileData as { email: string } | null
+        if (profile?.email) {
+          const { data: invitationData } = await supabase
+            .from('pozvanky')
+            .select('tym_id, role')
+            .eq('zavod_id', zavodId)
+            .ilike('email', profile.email)
+            .single()
+
+          const invitation = invitationData as { tym_id: string; role: string } | null
+          if (invitation?.tym_id) {
+            // Create team membership if it doesn't exist
+            const adminClient = createAdminClient()
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (adminClient.from('clenove_tymu') as any)
+              .upsert({
+                tym_id: invitation.tym_id,
+                user_id: user.id,
+                role: invitation.role || 'zavodnik',
+              }, { onConflict: 'tym_id,user_id' })
+
+            membershipData = { tym_id: invitation.tym_id, role: (invitation.role || 'zavodnik') as ClenTymu['role'] }
+          }
+        }
+      }
+    }
+
+    if (!membershipData) {
       return {
         success: false,
         error: {
@@ -177,8 +215,6 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
         },
       }
     }
-
-    const membershipData = membership as Pick<ClenTymu, 'tym_id' | 'role'>
     const userTeam = (teams as Pick<Tym, 'id' | 'peg_cislo'>[]).find(t => t.id === membershipData.tym_id)
 
     // Check permission to submit catch
