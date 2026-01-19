@@ -28,7 +28,11 @@ CREATE INDEX IF NOT EXISTS idx_system_admins_email ON system_admins(email);
 
 ALTER TABLE system_admins ENABLE ROW LEVEL SECURITY;
 
--- Každý přihlášený uživatel může číst (pro kontrolu vlastní role)
+-- Každý může číst (pro kontrolu role v middleware)
+CREATE POLICY "Anon can read system_admins" ON system_admins
+  FOR SELECT TO anon
+  USING (true);
+
 CREATE POLICY "Authenticated can read system_admins" ON system_admins
   FOR SELECT TO authenticated
   USING (true);
