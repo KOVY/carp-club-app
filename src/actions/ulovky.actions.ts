@@ -134,8 +134,11 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
     // Note: We already validated time window above, no need to check stav
     // The stav field may not be updated in real-time
 
+    // Use adminClient to bypass RLS for team/membership lookups
+    const adminClient = createAdminClient()
+
     // Requirement 3.4: Get user's team in this zavod
-    const { data: teams } = await supabase
+    const { data: teams } = await adminClient
       .from('tymy')
       .select('id, peg_cislo')
       .eq('zavod_id', zavodId)
@@ -153,7 +156,7 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
     const teamIds = (teams as Pick<Tym, 'id' | 'peg_cislo'>[]).map(t => t.id)
 
     // Find user's team membership
-    const { data: membershipResult } = await supabase
+    const { data: membershipResult } = await adminClient
       .from('clenove_tymu')
       .select('tym_id, role')
       .eq('user_id', user.id)
@@ -164,7 +167,7 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
 
     // If no team membership, check zavod_role and try to find team via invitation
     if (!membershipData) {
-      const { data: zavodRole } = await supabase
+      const { data: zavodRole } = await adminClient
         .from('zavod_role')
         .select('role')
         .eq('user_id', user.id)
@@ -173,7 +176,7 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
 
       if (zavodRole) {
         // User has zavod_role, get their email and find team via invitation
-        const { data: profileData } = await supabase
+        const { data: profileData } = await adminClient
           .from('profiles')
           .select('email')
           .eq('id', user.id)
@@ -181,7 +184,7 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
 
         const profile = profileData as { email: string } | null
         if (profile?.email) {
-          const { data: invitationData } = await supabase
+          const { data: invitationData } = await adminClient
             .from('pozvanky')
             .select('tym_id, role')
             .eq('zavod_id', zavodId)
@@ -191,7 +194,6 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
           const invitation = invitationData as { tym_id: string; role: string } | null
           if (invitation?.tym_id) {
             // Create team membership if it doesn't exist
-            const adminClient = createAdminClient()
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (adminClient.from('clenove_tymu') as any)
               .upsert({

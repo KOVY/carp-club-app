@@ -17,13 +17,13 @@ type Role = 'zavodnik' | 'kapitan' | 'rozhodci' | 'poradatel' | 'divak' | 'hlavn
 
 /**
  * Check if user can submit a catch
- * Only kapitan, rozhodci, and poradatel can submit catches
- * 
+ * All team members (zavodnik, kapitan), rozhodci, and poradatel can submit catches
+ *
  * @param ctx - Permission context with user role
  * @returns true if user can submit catches
  */
 export function canSubmitUlovek(ctx: PermissionContext): boolean {
-  return ctx.role === 'kapitan' || ctx.role === 'rozhodci' || ctx.role === 'poradatel';
+  return ctx.role === 'zavodnik' || ctx.role === 'kapitan' || ctx.role === 'rozhodci' || ctx.role === 'poradatel';
 }
 
 /**
