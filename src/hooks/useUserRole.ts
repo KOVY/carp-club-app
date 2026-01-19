@@ -16,6 +16,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getUserRoleInZavod } from '@/actions/ulovky.actions'
 import type { UserRole } from '@/lib/types'
 
 export interface UseUserRoleOptions {
@@ -99,57 +100,20 @@ export function useUserRole({
 
       setUserId(user.id)
 
-      // Check zavod_role table for explicit role assignment
-      const { data: zavodRole } = await supabase
-        .from('zavod_role')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('zavod_id', zavodId)
-        .single()
+      // Use server action to get role (bypasses RLS)
+      const roleResult = await getUserRoleInZavod(zavodId)
 
-      if (zavodRole) {
-        setRole((zavodRole as { role: UserRole }).role)
-        // For rozhodci/poradatel, they don't have a team
+      if (roleResult.success && roleResult.data?.role) {
+        setRole(roleResult.data.role)
+        setTymId(roleResult.data.tymId)
+        // TODO: Get peg number if needed
+        setPegCislo(null)
+      } else {
+        // Default to divak
+        setRole('divak')
         setTymId(null)
         setPegCislo(null)
-        setIsLoading(false)
-        return
       }
-
-      // Check if user is a team member
-      const { data: teams } = await supabase
-        .from('tymy')
-        .select('id, peg_cislo')
-        .eq('zavod_id', zavodId)
-
-      if (teams && teams.length > 0) {
-        const typedTeams = teams as Array<{ id: string; peg_cislo: number | null }>
-        const teamIds = typedTeams.map(t => t.id)
-
-        const { data: clenTymu } = await supabase
-          .from('clenove_tymu')
-          .select('role, tym_id')
-          .eq('user_id', user.id)
-          .in('tym_id', teamIds)
-          .single()
-
-        if (clenTymu) {
-          const typedClen = clenTymu as { role: UserRole; tym_id: string }
-          setRole(typedClen.role)
-          setTymId(typedClen.tym_id)
-          
-          // Find peg number for the team
-          const team = typedTeams.find(t => t.id === typedClen.tym_id)
-          setPegCislo(team?.peg_cislo ?? null)
-          setIsLoading(false)
-          return
-        }
-      }
-
-      // Default to divak
-      setRole('divak')
-      setTymId(null)
-      setPegCislo(null)
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch user role'))
       setRole('divak')
@@ -173,7 +137,7 @@ export function useUserRole({
   )
 
   // Permission checks based on role
-  const canSubmitUlovek = role === 'kapitan' || role === 'rozhodci' || role === 'poradatel'
+  const canSubmitUlovek = role === 'zavodnik' || role === 'kapitan' || role === 'rozhodci' || role === 'poradatel'
   const canConfirmUlovek = role === 'kapitan' || role === 'rozhodci' || role === 'poradatel'
   const canIssueYellowCard = role === 'rozhodci' || role === 'poradatel'
   const canManageZavod = role === 'poradatel'
