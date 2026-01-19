@@ -190,24 +190,33 @@ async function checkHlavniAdminAccess(
   userId: string
 ): Promise<boolean> {
   // First check system_admins table (global admin)
-  const { data: systemAdmin } = await supabase
+  const { data: systemAdmin, error: sysAdminError } = await supabase
     .from('system_admins')
     .select('id')
     .eq('user_id', userId)
     .maybeSingle()
 
+  console.log('[Middleware] checkHlavniAdminAccess for userId:', userId)
+  console.log('[Middleware] system_admins result:', { systemAdmin, error: sysAdminError?.message })
+
   if (systemAdmin) {
+    console.log('[Middleware] User is system admin, granting access')
     return true
   }
 
   // Then check zavod_role table
-  const { data: roles } = await supabase
+  const { data: roles, error: rolesError } = await supabase
     .from('zavod_role')
     .select('role')
     .eq('user_id', userId)
     .in('role', ['hlavni_admin', 'poradatel'])
 
-  return roles !== null && roles.length > 0
+  console.log('[Middleware] zavod_role result:', { roles, error: rolesError?.message })
+
+  const hasAccess = roles !== null && roles.length > 0
+  console.log('[Middleware] Final access decision:', hasAccess)
+
+  return hasAccess
 }
 
 export const config = {
