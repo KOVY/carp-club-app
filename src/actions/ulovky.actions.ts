@@ -113,34 +113,36 @@ export async function getUserRoleInZavod(zavodId: string): Promise<ActionResult<
       }
 
       // Check via invitation
-      const { data: profile } = await adminClient
+      const { data: profileData } = await adminClient
         .from('profiles')
         .select('email')
         .eq('id', user.id)
         .single()
 
+      const profile = profileData as { email: string } | null
       if (profile?.email) {
         const { data: invitation } = await adminClient
           .from('pozvanky')
           .select('tym_id, role')
           .eq('zavod_id', zavodId)
-          .ilike('email', (profile as { email: string }).email)
+          .ilike('email', profile.email)
           .single()
 
-        if (invitation?.tym_id) {
+        const inv = invitation as { tym_id: string; role: string } | null
+        if (inv?.tym_id) {
           // Auto-create team membership
           await (adminClient.from('clenove_tymu') as any)
             .upsert({
-              tym_id: (invitation as { tym_id: string }).tym_id,
+              tym_id: inv.tym_id,
               user_id: user.id,
-              role: (invitation as { role: string }).role || 'zavodnik',
+              role: inv.role || 'zavodnik',
             }, { onConflict: 'tym_id,user_id' })
 
           return {
             success: true,
             data: {
-              role: ((invitation as { role: string }).role || 'zavodnik') as UserRole,
-              tymId: (invitation as { tym_id: string }).tym_id
+              role: (inv.role || 'zavodnik') as UserRole,
+              tymId: inv.tym_id
             }
           }
         }
