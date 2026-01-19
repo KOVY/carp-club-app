@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Calendar, MapPin, FileText, Save, Loader2, Trash2 } from "lucide-react"
+import { ArrowLeft, Calendar, MapPin, FileText, Save, Loader2, Trash2, Settings } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -119,6 +119,9 @@ export default function EditZavodPage({ params }: PageProps) {
       datum_end: formData.datum_end,
       embargo_od: formData.embargo_od || null,
       pravidla: formData.pravidla.trim() || undefined,
+      min_vaha_kg: parseFloat(formData.min_vaha_kg) || 5,
+      top_n_ryb: parseInt(formData.top_n_ryb) || 5,
+      pocet_potvrzeni: parseInt(formData.pocet_potvrzeni) || 2,
     })
 
     if (result.success) {
@@ -298,6 +301,65 @@ export default function EditZavodPage({ params }: PageProps) {
                 />
                 <p className="text-xs text-muted-foreground">
                   Od tohoto času se skryje leaderboard před účastníky
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Parametry závodu */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Parametry závodu
+              </CardTitle>
+              <CardDescription>
+                Nastavení pravidel pro úlovky a bodování
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="min_vaha_kg">Minimální váha ryby (kg)</Label>
+                <Input
+                  id="min_vaha_kg"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={formData.min_vaha_kg}
+                  onChange={(e) => handleChange("min_vaha_kg", e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ryby pod touto váhou nebudou započítány
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="top_n_ryb">Počet ryb do skóre</Label>
+                <Input
+                  id="top_n_ryb"
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={formData.top_n_ryb}
+                  onChange={(e) => handleChange("top_n_ryb", e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Počet nejlepších ryb započítaných do celkového skóre
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pocet_potvrzeni">Počet potřebných potvrzení</Label>
+                <Input
+                  id="pocet_potvrzeni"
+                  type="number"
+                  min="1"
+                  max="4"
+                  value={formData.pocet_potvrzeni}
+                  onChange={(e) => handleChange("pocet_potvrzeni", e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Kolik potvrzení od sousedních peg je třeba pro uznání úlovku
                 </p>
               </div>
             </CardContent>

@@ -28,6 +28,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: "/", label: "Závody", exact: true },
+  { href: "/kalendar", label: "Kalendář" },
   { href: "/archiv", label: "Archiv" },
 ]
 

@@ -287,6 +287,9 @@ export async function createZavodAsAdmin(input: CreateZavodInput): Promise<Actio
       pravidla: pravidla || null,
       soutez_id: soutez_id || null,
       stav: 'priprava' as const,
+      min_vaha_kg: input.min_vaha_kg ?? 5,
+      top_n_ryb: input.top_n_ryb ?? 5,
+      pocet_potvrzeni: input.pocet_potvrzeni ?? 2,
     }
 
     const { data: zavodData, error: insertError } = await adminClient

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   ArrowLeft,
   Plus,
@@ -13,15 +14,21 @@ import {
   CreditCard,
   MapPin,
   ChevronRight,
+  Upload,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { getTymyOverview } from "@/actions/tym.actions"
+import { BulkImportDialog } from "@/components/admin/BulkImportDialog"
+import { CopyTeamsDialog } from "@/components/admin/CopyTeamsDialog"
+import { getTymyOverview, getZavodyForCopy, copyTeamsFromZavod } from "@/actions/tym.actions"
 import { getZavodDetail } from "@/actions/hlavni-admin.actions"
+import { bulkImportTeams } from "@/actions/bulk-import.actions"
+import { useToast } from "@/hooks/use-toast"
 import type { TymOverview, Zavod } from "@/lib/types"
+import type { ParsedTeam } from "@/lib/excel-parser"
 
 interface PageProps {
   params: Promise<{ zavodId: string }>
@@ -29,18 +36,96 @@ interface PageProps {
 
 export default function TymyPage({ params }: PageProps) {
   const { zavodId } = use(params)
+  const router = useRouter()
+  const { toast } = useToast()
   const [zavod, setZavod] = useState<Zavod | null>(null)
   const [tymy, setTymy] = useState<TymOverview[]>([])
   const [filteredTymy, setFilteredTymy] = useState<TymOverview[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isImporting, setIsImporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [zavodyForCopy, setZavodyForCopy] = useState<Array<{
+    id: string
+    nazev: string
+    pocet_tymu: number
+    datum_start: string
+  }>>([])
+
+  const handleCopyTeams = async (sourceZavodId: string) => {
+    try {
+      const result = await copyTeamsFromZavod(sourceZavodId, zavodId)
+      if (result.success && result.data) {
+        toast({
+          title: "Týmy zkopírovány",
+          description: `Zkopírováno ${result.data.teamsCopied} týmů a ${result.data.membersCopied} členů`,
+        })
+        // Refresh data
+        router.refresh()
+        const tymyResult = await getTymyOverview(zavodId)
+        if (tymyResult.success && tymyResult.data) {
+          setTymy(tymyResult.data)
+          setFilteredTymy(tymyResult.data)
+        }
+      } else {
+        toast({
+          title: "Chyba při kopírování",
+          description: result.error?.message || "Nepodařilo se zkopírovat týmy",
+          variant: "destructive",
+        })
+      }
+    } catch (err) {
+      toast({
+        title: "Chyba",
+        description: "Došlo k neočekávané chybě",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleBulkImport = async (teams: ParsedTeam[]) => {
+    setIsImporting(true)
+    try {
+      const result = await bulkImportTeams(zavodId, teams)
+      if (result.success && result.data) {
+        toast({
+          title: "Import dokončen",
+          description: `Vytvořeno ${result.data.teamsCreated} týmů a ${result.data.membersCreated} členů`,
+        })
+        if (result.data.errors.length > 0) {
+          console.warn("Import errors:", result.data.errors)
+        }
+        // Refresh data
+        router.refresh()
+        const tymyResult = await getTymyOverview(zavodId)
+        if (tymyResult.success && tymyResult.data) {
+          setTymy(tymyResult.data)
+          setFilteredTymy(tymyResult.data)
+        }
+      } else {
+        toast({
+          title: "Chyba při importu",
+          description: result.error?.message || "Nepodařilo se importovat týmy",
+          variant: "destructive",
+        })
+      }
+    } catch (err) {
+      toast({
+        title: "Chyba",
+        description: "Došlo k neočekávané chybě",
+        variant: "destructive",
+      })
+    } finally {
+      setIsImporting(false)
+    }
+  }
 
   useEffect(() => {
     const fetchData = async () => {
-      const [zavodResult, tymyResult] = await Promise.all([
+      const [zavodResult, tymyResult, zavodyResult] = await Promise.all([
         getZavodDetail(zavodId),
         getTymyOverview(zavodId),
+        getZavodyForCopy(),
       ])
 
       if (zavodResult.success && zavodResult.data) {
@@ -53,6 +138,11 @@ export default function TymyPage({ params }: PageProps) {
       } else {
         setError(tymyResult.error?.message || 'Nepodařilo se načíst týmy')
       }
+
+      if (zavodyResult.success && zavodyResult.data) {
+        setZavodyForCopy(zavodyResult.data)
+      }
+
       setIsLoading(false)
     }
 
@@ -92,12 +182,28 @@ export default function TymyPage({ params }: PageProps) {
               <p className="text-muted-foreground mt-1">{zavod.nazev}</p>
             )}
           </div>
-          <Link href={`/admin/${zavodId}/tymy/novy`}>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nový tým
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <CopyTeamsDialog
+              targetZavodId={zavodId}
+              onCopy={handleCopyTeams}
+              zavodyForCopy={zavodyForCopy}
+            />
+            <BulkImportDialog
+              zavodId={zavodId}
+              onImportComplete={handleBulkImport}
+            >
+              <Button variant="outline" className="gap-2" disabled={isImporting}>
+                <Upload className="h-4 w-4" />
+                Hromadný import
+              </Button>
+            </BulkImportDialog>
+            <Link href={`/admin/${zavodId}/tymy/novy`}>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nový tým
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 

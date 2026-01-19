@@ -120,6 +120,9 @@ export interface CreateZavodInput {
   embargo_od?: string;
   pravidla?: string;
   soutez_id?: string;
+  min_vaha_kg?: number;
+  top_n_ryb?: number;
+  pocet_potvrzeni?: number;
 }
 
 export interface UpdateZavodInput {
@@ -130,6 +133,9 @@ export interface UpdateZavodInput {
   embargo_od?: string | null;
   pravidla?: string;
   stav?: 'priprava' | 'probiha' | 'ukoncen';
+  min_vaha_kg?: number;
+  top_n_ryb?: number;
+  pocet_potvrzeni?: number;
 }
 
 export interface CreateTymInput {

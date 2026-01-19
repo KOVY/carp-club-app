@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { RootLayoutClient } from '@/components/layout/RootLayoutClient'
 import { ThemeProvider } from '@/components/providers'
 import { OfflineIndicator } from '@/components/common'
+import { PWAInstallPrompt } from '@/components/pwa'
 
 const inter = Inter({ subsets: ['latin', 'latin-ext'] })
 
@@ -94,6 +95,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="cs" data-theme="outdoor" suppressHydrationWarning>
+      <head>
+        {/* PWA iOS specific meta tags */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Carp Club" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
+        {/* Splash screens for iOS */}
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body className={`${inter.className} min-h-screen flex flex-col theme-transition bg-background text-foreground`} suppressHydrationWarning>
         <ThemeProvider defaultTheme="outdoor">
           <OfflineIndicator position="top" showRetry />
@@ -101,6 +111,7 @@ export default function RootLayout({
             {children}
           </RootLayoutClient>
           <Toaster />
+          <PWAInstallPrompt />
         </ThemeProvider>
       </body>
     </html>

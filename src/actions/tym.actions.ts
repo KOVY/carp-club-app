@@ -575,3 +575,205 @@ export async function losujPegy(zavodId: string): Promise<ActionResult<void>> {
     }
   }
 }
+
+/**
+ * Získat seznam závodů pro kopírování týmů
+ * Vrací závody s počtem týmů (pro dropdown)
+ */
+export async function getZavodyForCopy(): Promise<ActionResult<Array<{
+  id: string
+  nazev: string
+  pocet_tymu: number
+  datum_start: string
+}>>> {
+  try {
+    const adminClient = createAdminClient()
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Musíte být přihlášen',
+        },
+      }
+    }
+
+    // Získat všechny závody s počtem týmů
+    const { data: zavodyData, error } = await adminClient
+      .from('zavody')
+      .select('id, nazev, datum_start')
+      .order('datum_start', { ascending: false })
+
+    if (error) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: 'Nepodařilo se načíst závody',
+        },
+      }
+    }
+
+    const zavody = zavodyData as Array<{ id: string; nazev: string; datum_start: string }> | null
+
+    // Spočítat týmy pro každý závod
+    const result = await Promise.all(
+      (zavody || []).map(async (zavod) => {
+        const { count } = await adminClient
+          .from('tymy')
+          .select('*', { count: 'exact', head: true })
+          .eq('zavod_id', zavod.id)
+
+        return {
+          id: zavod.id,
+          nazev: zavod.nazev,
+          datum_start: zavod.datum_start,
+          pocet_tymu: count || 0,
+        }
+      })
+    )
+
+    // Filtrovat jen závody s týmy
+    const zavodyWithTeams = result.filter(z => z.pocet_tymu > 0)
+
+    return { success: true, data: zavodyWithTeams }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
+
+/**
+ * Kopírovat týmy z jednoho závodu do druhého
+ */
+export async function copyTeamsFromZavod(
+  sourceZavodId: string,
+  targetZavodId: string
+): Promise<ActionResult<{ teamsCopied: number; membersCopied: number }>> {
+  try {
+    const adminClient = createAdminClient()
+
+    // Ověřit přístup k cílovému závodu
+    const userId = await checkZavodAdminAccess(targetZavodId)
+    if (!userId) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Nemáte oprávnění upravovat cílový závod',
+        },
+      }
+    }
+
+    // Ověřit, že zdrojový závod existuje
+    const { data: sourceZavod, error: sourceError } = await adminClient
+      .from('zavody')
+      .select('id, nazev')
+      .eq('id', sourceZavodId)
+      .single()
+
+    if (sourceError || !sourceZavod) {
+      return {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Zdrojový závod nenalezen',
+        },
+      }
+    }
+
+    // Získat všechny týmy ze zdrojového závodu
+    const { data: sourceTymyData, error: tymyError } = await adminClient
+      .from('tymy')
+      .select('*')
+      .eq('zavod_id', sourceZavodId)
+
+    const sourceTymy = sourceTymyData as Array<{
+      id: string
+      nazev: string
+      kapitan_id: string
+      barva: string | null
+    }> | null
+
+    if (tymyError || !sourceTymy || sourceTymy.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_OPERATION',
+          message: 'Zdrojový závod nemá žádné týmy',
+        },
+      }
+    }
+
+    let teamsCopied = 0
+    let membersCopied = 0
+
+    // Kopírovat každý tým
+    for (const sourceTym of sourceTymy) {
+      // Vytvořit nový tým v cílovém závodě
+      const { data: newTym, error: createError } = await (adminClient
+        .from('tymy') as any)
+        .insert({
+          zavod_id: targetZavodId,
+          nazev: sourceTym.nazev,
+          kapitan_id: sourceTym.kapitan_id,
+          barva: sourceTym.barva,
+          // peg_cislo se nepřenáší - bude losováno znovu
+          // zaplaceno se nepřenáší - nový závod, nová platba
+        })
+        .select('id')
+        .single()
+
+      if (createError || !newTym) {
+        console.error(`[copyTeams] Chyba při kopírování týmu ${sourceTym.nazev}:`, createError)
+        continue
+      }
+
+      teamsCopied++
+
+      // Získat členy zdrojového týmu
+      const { data: sourceClenoveData } = await adminClient
+        .from('clenove_tymu')
+        .select('user_id, role')
+        .eq('tym_id', sourceTym.id)
+
+      const sourceClenove = sourceClenoveData as Array<{ user_id: string; role: string }> | null
+
+      // Kopírovat členy
+      for (const clen of (sourceClenove || [])) {
+        await (adminClient.from('clenove_tymu') as any).insert({
+          tym_id: newTym.id,
+          user_id: clen.user_id,
+          role: clen.role,
+        })
+
+        // Přidat zavod_role pro člena
+        await (adminClient.from('zavod_role') as any).upsert({
+          zavod_id: targetZavodId,
+          user_id: clen.user_id,
+          role: clen.role,
+        }, { onConflict: 'zavod_id,user_id' })
+
+        membersCopied++
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        teamsCopied,
+        membersCopied,
+      },
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}

@@ -731,7 +731,10 @@ export async function verifyPozvanka(token: string): Promise<ActionResult<{
 /**
  * Registrace přes pozvánku s automatickým přihlášením
  */
-export async function registerViaInvitation(token: string): Promise<ActionResult<{
+export async function registerViaInvitation(
+  token: string,
+  options?: { termsAccepted?: boolean }
+): Promise<ActionResult<{
   zavodId: string
   tymId: string | null
   needsSignup: boolean
@@ -795,6 +798,17 @@ export async function registerViaInvitation(token: string): Promise<ActionResult
 
       if (linkData?.properties?.action_link) {
         magicLink = linkData.properties.action_link
+      }
+
+      // Uložit GDPR consent timestamp do profilu
+      if (options?.termsAccepted && result.user_id) {
+        await (adminClient
+          .from('profiles') as any)
+          .update({
+            terms_accepted_at: new Date().toISOString(),
+            privacy_policy_version: new Date().toISOString().split('T')[0],
+          })
+          .eq('id', result.user_id)
       }
     }
 

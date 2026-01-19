@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Fish } from "lucide-react"
+import { Fish, Shield, FileText, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface FooterProps {
@@ -12,7 +12,7 @@ export function Footer({ className }: FooterProps) {
   return (
     <footer className={cn("border-t bg-muted/50", className)}>
       <div className="container py-8 md:py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
               <Fish className="h-5 w-5 text-primary" />
@@ -30,6 +30,23 @@ export function Footer({ className }: FooterProps) {
               </Link>
               <Link href="/archiv" className="hover:text-foreground transition-colors">
                 Archiv závodů
+              </Link>
+              <Link href="/kalendar" className="hover:text-foreground transition-colors flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                Kalendář závodů
+              </Link>
+            </nav>
+          </div>
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold">Právní informace</h4>
+            <nav className="flex flex-col space-y-2 text-sm text-muted-foreground">
+              <Link href="/ochrana-osobnich-udaju" className="hover:text-foreground transition-colors flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                Ochrana osobních údajů
+              </Link>
+              <Link href="/podminky-uziti" className="hover:text-foreground transition-colors flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                Podmínky užití
               </Link>
             </nav>
           </div>

@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
+import { AnimatedScore } from "./AnimatedScore"
 import { cn } from "@/lib/utils"
 import type { LeaderboardEntry } from "@/lib/types"
 
@@ -207,9 +208,16 @@ function LeaderboardRow({ entry, position, weightsVisible }: LeaderboardRowProps
       {weightsVisible && (
         <TableCell className="text-right font-mono">
           {isDisqualified ? (
-            <span className="text-destructive">0.00</span>
+            <span className="text-destructive">0.00 kg</span>
           ) : (
-            <span>{skore.toFixed(2)} kg</span>
+            <AnimatedScore
+              value={skore}
+              decimals={2}
+              suffix=" kg"
+              duration={1500}
+              delay={position * 100}
+              animationKey={`${entry.tym.id}-${skore}`}
+            />
           )}
         </TableCell>
       )}
@@ -301,7 +309,19 @@ export function CompactLeaderboard({
             <p className="font-medium truncate">{entry.tym.nazev}</p>
             <p className="text-xs text-muted-foreground">
               {entry.pocetRyb} {entry.pocetRyb === 1 ? "ryba" : entry.pocetRyb < 5 ? "ryby" : "ryb"}
-              {weightsVisible && ` • ${entry.skore.toFixed(2)} kg`}
+              {weightsVisible && (
+                <>
+                  {" • "}
+                  <AnimatedScore
+                    value={entry.skore}
+                    decimals={2}
+                    suffix=" kg"
+                    duration={1200}
+                    delay={index * 80}
+                    className="inline"
+                  />
+                </>
+              )}
             </p>
           </div>
           {entry.zluteKarty > 0 && (

@@ -1,9 +1,11 @@
 {
-  "name": "Carp Club CR - Kaprarske zavody",
+  "name": "Carp Club ČR - Kaprařské závody",
   "short_name": "Carp Club",
-  "description": "Aplikace pro spravu kaprarskych zavodu - zive vysledky, leaderboard, potvrzovani ulovku",
+  "description": "Aplikace pro správu kaprařských závodů - živé výsledky, leaderboard, potvrzování úlovků",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#0F172A",
   "theme_color": "#0D9488",
   "orientation": "portrait-primary",
@@ -25,11 +27,30 @@
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Carp Club - Živé výsledky závodů"
     }
   ],
   "categories": ["sports", "lifestyle"],
   "lang": "cs",
   "dir": "ltr",
   "scope": "/",
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  }
 }

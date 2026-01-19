@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { X, Fish, Home, Archive, LogIn, LogOut, Trophy, CheckCircle, Image as ImageIcon, FileText, Settings, Users, Eye, Shield, Play } from "lucide-react"
+import { X, Fish, Home, Archive, LogIn, LogOut, Trophy, CheckCircle, Image as ImageIcon, FileText, Settings, Users, Eye, Shield, Play, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
@@ -70,6 +70,7 @@ export function MobileMenu({
   const getNavItems = (): NavItem[] => {
     const baseItems: NavItem[] = [
       { href: "/", label: "Závody", icon: Home, exact: true },
+      { href: "/kalendar", label: "Kalendář", icon: Calendar },
       { href: "/archiv", label: "Archiv", icon: Archive },
       { href: "/zavod/demo", label: "Demo závod", icon: Play },
     ]

@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
+import { useState, useEffect, use, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Fish, Calendar, MapPin, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { Fish, Calendar, MapPin, CheckCircle, AlertCircle, Loader2, Shield } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { verifyPozvanka, registerViaInvitation } from "@/actions/pozvanka.actions"
 
 interface PozvankaInfo {
@@ -50,6 +51,8 @@ export default function PozvankaPage({ params }: PageProps) {
   const [isRegistering, setIsRegistering] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const checkboxRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const verify = async () => {
@@ -66,10 +69,15 @@ export default function PozvankaPage({ params }: PageProps) {
   }, [token])
 
   const handleRegister = async () => {
+    if (!termsAccepted) {
+      setError("Pro pokračování musíte souhlasit s podmínkami užití a ochranou osobních údajů")
+      return
+    }
+
     setIsRegistering(true)
     setError(null)
 
-    const result = await registerViaInvitation(token)
+    const result = await registerViaInvitation(token, { termsAccepted: true })
 
     if (result.success && result.data) {
       // Check if user needs to sign up first (email doesn't have account yet)
@@ -270,9 +278,42 @@ export default function PozvankaPage({ params }: PageProps) {
                 </div>
               )}
 
+              {/* GDPR Consent Checkbox */}
+              <div className="p-4 rounded-lg bg-muted/50 border">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    ref={checkboxRef}
+                    id="terms"
+                    checked={termsAccepted}
+                    onCheckedChange={setTermsAccepted}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="terms" className="text-sm leading-relaxed cursor-pointer">
+                    <Shield className="h-4 w-4 inline-block mr-1 text-primary" />
+                    Souhlasím s{" "}
+                    <Link
+                      href="/podminky-uziti"
+                      target="_blank"
+                      className="text-primary hover:underline font-medium"
+                    >
+                      podmínkami užití
+                    </Link>{" "}
+                    a{" "}
+                    <Link
+                      href="/ochrana-osobnich-udaju"
+                      target="_blank"
+                      className="text-primary hover:underline font-medium"
+                    >
+                      zásadami ochrany osobních údajů
+                    </Link>
+                    .
+                  </label>
+                </div>
+              </div>
+
               <Button
                 onClick={handleRegister}
-                disabled={isRegistering}
+                disabled={isRegistering || !termsAccepted}
                 className="w-full h-12 text-lg"
               >
                 {isRegistering ? (
