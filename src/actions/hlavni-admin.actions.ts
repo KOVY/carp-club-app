@@ -349,7 +349,7 @@ export async function updateZavodAsAdmin(
   input: UpdateZavodInput
 ): Promise<ActionResult<Zavod>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     const access = await checkAdminAccess()
     if (!access) {
@@ -364,7 +364,7 @@ export async function updateZavodAsAdmin(
 
     // Zkontroluj, zda má přístup k tomuto závodu
     if (!access.isHlavniAdmin) {
-      const { data: hasAccess } = await supabase
+      const { data: hasAccess } = await adminClient
         .from('zavod_role')
         .select('id')
         .eq('zavod_id', zavodId)
@@ -383,7 +383,7 @@ export async function updateZavodAsAdmin(
       }
     }
 
-    const { data: zavod, error } = await (supabase
+    const { data: zavod, error } = await (adminClient
       .from('zavody') as any)
       .update(input)
       .eq('id', zavodId)
