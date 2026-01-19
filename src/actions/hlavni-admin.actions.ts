@@ -560,3 +560,174 @@ export async function getSouteze(): Promise<ActionResult<{ id: string; nazev: st
     }
   }
 }
+
+/**
+ * Získat všechny čekající úlovky v závodě (pro admina)
+ */
+export async function getPendingUlovkyAdmin(zavodId: string): Promise<ActionResult<any[]>> {
+  try {
+    const access = await checkAdminAccess()
+    if (!access) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Nemáte oprávnění',
+        },
+      }
+    }
+
+    const adminClient = createAdminClient()
+
+    const { data: ulovky, error } = await adminClient
+      .from('ulovky')
+      .select(`
+        *,
+        tym:tymy(id, nazev, peg_cislo),
+        chytil:profiles!ulovky_chytil_user_id_fkey(id, jmeno),
+        potvrzeni(
+          id,
+          potvrdil_user_id,
+          potvrdil_tym_id,
+          potvrzeno,
+          poznamka,
+          created_at
+        )
+      `)
+      .eq('zavod_id', zavodId)
+      .order('cas', { ascending: false })
+
+    if (error) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: error.message,
+        },
+      }
+    }
+
+    return { success: true, data: ulovky || [] }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
+
+/**
+ * Potvrdit úlovek jako admin/rozhodčí
+ * Okamžitě nastaví stav na 'potvrzeno'
+ */
+export async function confirmUlovekAdmin(ulovekId: string): Promise<ActionResult<void>> {
+  try {
+    const access = await checkAdminAccess()
+    if (!access) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Nemáte oprávnění',
+        },
+      }
+    }
+
+    const adminClient = createAdminClient()
+
+    // Update catch to confirmed
+    const { error } = await (adminClient
+      .from('ulovky') as any)
+      .update({
+        stav: 'potvrzeno',
+        potvrzeno_rozhodcim: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', ulovekId)
+
+    if (error) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: error.message,
+        },
+      }
+    }
+
+    // Also insert a confirmation record for audit
+    await (adminClient
+      .from('potvrzeni') as any)
+      .insert({
+        ulovek_id: ulovekId,
+        potvrdil_user_id: access.userId,
+        potvrdil_tym_id: null,
+        potvrzeno: true,
+        poznamka: 'Potvrzeno administrátorem',
+      })
+
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
+
+/**
+ * Zamítnout úlovek jako admin/rozhodčí
+ */
+export async function rejectUlovekAdmin(ulovekId: string, reason?: string): Promise<ActionResult<void>> {
+  try {
+    const access = await checkAdminAccess()
+    if (!access) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Nemáte oprávnění',
+        },
+      }
+    }
+
+    const adminClient = createAdminClient()
+
+    // Update catch to rejected
+    const { error } = await (adminClient
+      .from('ulovky') as any)
+      .update({
+        stav: 'zamitnuto',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', ulovekId)
+
+    if (error) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: error.message,
+        },
+      }
+    }
+
+    // Insert rejection record for audit
+    await (adminClient
+      .from('potvrzeni') as any)
+      .insert({
+        ulovek_id: ulovekId,
+        potvrdil_user_id: access.userId,
+        potvrdil_tym_id: null,
+        potvrzeno: false,
+        poznamka: reason || 'Zamítnuto administrátorem',
+      })
+
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}

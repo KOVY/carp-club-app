@@ -366,6 +366,13 @@ export default function ZavodDetailPage({ params }: PageProps) {
                 Správa rozhodčích
               </Button>
             </Link>
+            <Link href={`/admin/${zavodId}/ulovky`} className="block">
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <Fish className="h-4 w-4" />
+                Správa úlovků
+                <span className="ml-auto text-muted-foreground">{stats?.pocet_ulovku || 0}</span>
+              </Button>
+            </Link>
             {zavod.stav !== 'priprava' && (
               <Link href={`/zavod/${zavodId}/admin`} className="block">
                 <Button variant="outline" className="w-full justify-start gap-2">
