@@ -12,3 +12,4 @@ export {
   DemoProtectedButton
 } from './DemoLoginPrompt'
 export { AddCatchButton } from './AddCatchButton'
+export { TymoveUlovkyList } from './TymoveUlovkyList'

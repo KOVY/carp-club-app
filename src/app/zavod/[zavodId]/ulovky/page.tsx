@@ -5,11 +5,11 @@ import { useParams } from "next/navigation"
 import { Fish, RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { UlovekForm, PotvrzeniList } from "@/components/zavod"
+import { UlovekForm, PotvrzeniList, TymoveUlovkyList } from "@/components/zavod"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
 import { ErrorState } from "@/components/common/ErrorState"
 import { StatusMessage } from "@/components/common/StatusMessage"
-import { getUlovkyKPotvrzeni, getUserRoleInZavod } from "@/actions/ulovky.actions"
+import { getUlovkyKPotvrzeni, getUserRoleInZavod, getUlovkyTymu } from "@/actions/ulovky.actions"
 import { createClient } from "@/lib/supabase/client"
 import type { UlovekWithRelations, UserRole } from "@/lib/types"
 
@@ -25,6 +25,7 @@ export default function UlovkyPage() {
   const zavodId = params.zavodId as string
 
   const [pendingUlovky, setPendingUlovky] = useState<UlovekWithRelations[]>([])
+  const [teamUlovky, setTeamUlovky] = useState<UlovekWithRelations[]>([])
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -89,12 +90,21 @@ export default function UlovkyPage() {
         console.log('fetchData: set userRole to', roleResult.data.role)
       }
 
-      // Fetch pending catches for confirmation
-      console.log('fetchData: fetching pending catches...')
-      const result = await getUlovkyKPotvrzeni(zavodId)
-      console.log('fetchData: pending catches result:', result.success)
-      if (result.success && result.data) {
-        setPendingUlovky(result.data.ulovky)
+      // Fetch pending catches for confirmation and team catches in parallel
+      console.log('fetchData: fetching catches...')
+      const [pendingResult, teamResult] = await Promise.all([
+        getUlovkyKPotvrzeni(zavodId),
+        getUlovkyTymu(zavodId)
+      ])
+
+      console.log('fetchData: pending catches result:', pendingResult.success)
+      if (pendingResult.success && pendingResult.data) {
+        setPendingUlovky(pendingResult.data.ulovky)
+      }
+
+      console.log('fetchData: team catches result:', teamResult.success)
+      if (teamResult.success && teamResult.data) {
+        setTeamUlovky(teamResult.data.ulovky)
       }
 
       setError(null)
@@ -226,6 +236,11 @@ export default function UlovkyPage() {
           </div>
         )}
       </div>
+
+      {/* Team's catches with confirmation status */}
+      {canSubmitCatch && (
+        <TymoveUlovkyList ulovky={teamUlovky} />
+      )}
 
       {/* Info for users without permissions */}
       {!canSubmitCatch && !canConfirmCatch && (

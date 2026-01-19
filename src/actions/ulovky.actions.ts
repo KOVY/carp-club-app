@@ -721,3 +721,83 @@ export async function getUlovkyKPotvrzeni(
     }
   }
 }
+
+/**
+ * Get all catches for the user's team
+ *
+ * Returns all catches submitted by the user's team with their confirmation status
+ * Used for "My Team's Catches" section
+ */
+export async function getUlovkyTymu(
+  zavodId: string
+): Promise<ActionResult<{ ulovky: UlovekWithRelations[] }>> {
+  try {
+    const supabase = await createClient()
+    const adminClient = createAdminClient()
+
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: ErrorMessages[ErrorCodes.UNAUTHORIZED],
+        },
+      }
+    }
+
+    // Get user's team using server action logic
+    const roleResult = await getUserRoleInZavod(zavodId)
+
+    if (!roleResult.success || !roleResult.data?.tymId) {
+      // User is not in any team
+      return {
+        success: true,
+        data: { ulovky: [] },
+      }
+    }
+
+    const tymId = roleResult.data.tymId
+
+    // Get all catches for this team with relations
+    const { data: ulovky, error: ulovkyError } = await adminClient
+      .from('ulovky')
+      .select(`
+        *,
+        tym:tymy(id, nazev, peg_cislo),
+        chytil:profiles!ulovky_chytil_user_id_fkey(id, jmeno),
+        potvrzeni(
+          id,
+          potvrdil_user_id,
+          potvrdil_tym_id,
+          potvrzeno,
+          poznamka,
+          created_at
+        )
+      `)
+      .eq('zavod_id', zavodId)
+      .eq('tym_id', tymId)
+      .order('cas', { ascending: false })
+
+    if (ulovkyError) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
+        },
+      }
+    }
+
+    return {
+      success: true,
+      data: { ulovky: ulovky as UlovekWithRelations[] },
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
