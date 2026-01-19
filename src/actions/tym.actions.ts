@@ -11,6 +11,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import type {
   ActionResult,
@@ -20,6 +21,9 @@ import type {
   ClenTymuWithUser,
   UserRole,
 } from '@/lib/types'
+
+// Hardcoded admin user ID (prorybolov@gmail.com)
+const ADMIN_USER_ID = 'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25'
 
 // Typ pro tým s členy
 export interface TymWithClenove extends Tym {
@@ -36,6 +40,23 @@ async function checkZavodAdminAccess(zavodId: string): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  // Hardcoded admin check first
+  if (user.id === ADMIN_USER_ID) {
+    return user.id
+  }
+
+  // Check system_admins table
+  const { data: sysAdmin } = await supabase
+    .from('system_admins')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (sysAdmin) {
+    return user.id
+  }
+
+  // Check zavod_role
   const { data: role } = await supabase
     .from('zavod_role')
     .select('role')
@@ -255,6 +276,7 @@ export async function getTymDetail(tymId: string): Promise<ActionResult<TymWithC
 
 /**
  * Vytvořit nový tým
+ * Používá admin client pro obejití RLS
  */
 export async function createTym(input: {
   zavodId: string
@@ -263,8 +285,6 @@ export async function createTym(input: {
   zaplaceno?: boolean
 }): Promise<ActionResult<{ tymId: string }>> {
   try {
-    const supabase = await createClient()
-
     const userId = await checkZavodAdminAccess(input.zavodId)
     if (!userId) {
       return {
@@ -286,8 +306,22 @@ export async function createTym(input: {
       }
     }
 
+    // Použít admin client pro obejití RLS
+    let adminClient
+    try {
+      adminClient = createAdminClient()
+    } catch {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: 'Chybí konfigurace. Kontaktujte administrátora.',
+        },
+      }
+    }
+
     // Vložit tým (kapitan_id dočasně nastavíme na admina, bude změněn po přidání kapitána)
-    const { data: tymData, error } = await supabase
+    const { data: tymData, error } = await adminClient
       .from('tymy')
       .insert({
         zavod_id: input.zavodId,
@@ -302,6 +336,7 @@ export async function createTym(input: {
     const tym = tymData as { id: string } | null
 
     if (error || !tym) {
+      console.error('[createTym] Insert error:', error)
       return {
         success: false,
         error: {
