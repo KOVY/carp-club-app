@@ -364,10 +364,11 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
     }
 
     // Requirement 3.6: Upload photo to Supabase Storage
+    // Use adminClient to bypass RLS on storage bucket
     const fileExt = fotoFile.name.split('.').pop() || 'jpg'
     const fileName = `${zavodId}/${membershipData.tym_id}/${Date.now()}.${fileExt}`
-    
-    const { error: uploadError } = await supabase.storage
+
+    const { error: uploadError } = await adminClient.storage
       .from('ulovky-photos')
       .upload(fileName, fotoFile, {
         cacheControl: '3600',
@@ -386,7 +387,7 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
     }
 
     // Get public URL for the uploaded photo
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = adminClient.storage
       .from('ulovky-photos')
       .getPublicUrl(fileName)
 
@@ -403,8 +404,9 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
       stav: 'ceka' as StavPotvrzeni, // Requirement 3.3: Initial state is 'waiting'
     }
 
+    // Use adminClient to bypass RLS on ulovky table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: ulovek, error: insertError } = await (supabase
+    const { data: ulovek, error: insertError } = await (adminClient
       .from('ulovky') as any)
       .insert(insertData)
       .select('id')
@@ -412,7 +414,7 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
 
     if (insertError || !ulovek) {
       // Clean up uploaded photo on failure
-      await supabase.storage.from('ulovky-photos').remove([fileName])
+      await adminClient.storage.from('ulovky-photos').remove([fileName])
       
       return {
         success: false,
