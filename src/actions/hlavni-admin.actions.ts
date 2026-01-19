@@ -26,14 +26,22 @@ import type {
 
 /**
  * Kontrola, zda je uživatel hlavní admin nebo pořadatel
- * Nejprve kontroluje system_admins tabulku (globální admin)
+ * Nejprve kontroluje hardcoded admin, pak system_admins tabulku
  */
 async function checkAdminAccess(): Promise<{ userId: string; isHlavniAdmin: boolean } | null> {
+  // Hardcoded admin user ID as fallback (prorybolov@gmail.com)
+  const ADMIN_USER_ID = 'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25'
+
   const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return null
+  }
+
+  // Hardcoded admin check first
+  if (user.id === ADMIN_USER_ID) {
+    return { userId: user.id, isHlavniAdmin: true }
   }
 
   // Nejprve zkontroluj system_admins (globální admin)
