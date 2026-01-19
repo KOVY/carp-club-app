@@ -22,6 +22,9 @@ import type {
   UserRole,
 } from '@/lib/types'
 
+// Hardcoded admin user ID (prorybolov@gmail.com)
+const ADMIN_USER_ID = 'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25'
+
 // Base URL for invitation links
 const getBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_APP_URL) {
@@ -42,6 +45,23 @@ async function checkZavodAdminAccess(zavodId: string): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  // Hardcoded admin check first
+  if (user.id === ADMIN_USER_ID) {
+    return user.id
+  }
+
+  // Check system_admins table
+  const { data: sysAdmin } = await supabase
+    .from('system_admins')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (sysAdmin) {
+    return user.id
+  }
+
+  // Check zavod_role
   const { data: role } = await supabase
     .from('zavod_role')
     .select('role')
@@ -350,7 +370,8 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
     // Token bude platný až do konce závodu + 1 den
     const platnostDoWithBuffer = new Date(new Date(platnostDo).getTime() + 24 * 60 * 60 * 1000).toISOString()
 
-    const { data: pozvankaData, error: pozvankaError } = await supabase
+    // Použít adminClient pro obejití RLS
+    const { data: pozvankaData, error: pozvankaError } = await adminClient
       .from('pozvanky')
       .insert({
         zavod_id: input.zavodId,
@@ -369,7 +390,7 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
     if (pozvankaError) {
       // Kontrola duplicity - pokud pozvánka existuje, použít existující
       if (pozvankaError.code === '23505') {
-        const { data: existingData } = await supabase
+        const { data: existingData } = await adminClient
           .from('pozvanky')
           .select('*')
           .eq('zavod_id', input.zavodId)
@@ -865,6 +886,7 @@ export async function createPozvankyBatch(
 ): Promise<ActionResult<{ created: number; errors: string[] }>> {
   try {
     const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     const userId = await checkZavodAdminAccess(zavodId)
     if (!userId) {
@@ -878,7 +900,7 @@ export async function createPozvankyBatch(
     }
 
     // Získat datum konce závodu
-    const { data: zavodBatchData } = await supabase
+    const { data: zavodBatchData } = await adminClient
       .from('zavody')
       .select('datum_end')
       .eq('id', zavodId)
@@ -901,7 +923,7 @@ export async function createPozvankyBatch(
         continue
       }
 
-      const { error } = await supabase
+      const { error } = await adminClient
         .from('pozvanky')
         .insert({
           zavod_id: zavodId,
