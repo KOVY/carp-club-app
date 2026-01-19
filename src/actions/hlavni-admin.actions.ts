@@ -77,7 +77,7 @@ async function checkAdminAccess(): Promise<{ userId: string; isHlavniAdmin: bool
  */
 export async function getAllZavody(): Promise<ActionResult<Zavod[]>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     const access = await checkAdminAccess()
     if (!access) {
@@ -90,14 +90,14 @@ export async function getAllZavody(): Promise<ActionResult<Zavod[]>> {
       }
     }
 
-    let query = supabase
+    let query = adminClient
       .from('zavody')
       .select('*')
       .order('datum_start', { ascending: false })
 
     // Pokud není hlavní admin, zobraz jen jeho závody
     if (!access.isHlavniAdmin) {
-      const { data: userZavody } = await supabase
+      const { data: userZavody } = await adminClient
         .from('zavod_role')
         .select('zavod_id')
         .eq('user_id', access.userId)
@@ -141,7 +141,7 @@ export async function getZavodDetail(zavodId: string): Promise<ActionResult<{
   stats: ZavodStats
 }>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     const access = await checkAdminAccess()
     if (!access) {
@@ -155,7 +155,7 @@ export async function getZavodDetail(zavodId: string): Promise<ActionResult<{
     }
 
     // Získat závod
-    const { data: zavod, error: zavodError } = await supabase
+    const { data: zavod, error: zavodError } = await adminClient
       .from('zavody')
       .select('*')
       .eq('id', zavodId)
@@ -181,14 +181,14 @@ export async function getZavodDetail(zavodId: string): Promise<ActionResult<{
       { count: pocetPotvrzenych },
       { count: pocetZlutychKaret },
     ] = await Promise.all([
-      supabase.from('tymy').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
-      supabase.from('clenove_tymu').select('*', { count: 'exact', head: true })
-        .in('tym_id', (await supabase.from('tymy').select('id').eq('zavod_id', zavodId)).data?.map((t: { id: string }) => t.id) || []),
-      supabase.from('pozvanky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
-      supabase.from('pozvanky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId).eq('pouzita', true),
-      supabase.from('ulovky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
-      supabase.from('ulovky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId).eq('potvrzeno', true),
-      supabase.from('zlute_karty').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
+      adminClient.from('tymy').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
+      adminClient.from('clenove_tymu').select('*', { count: 'exact', head: true })
+        .in('tym_id', (await adminClient.from('tymy').select('id').eq('zavod_id', zavodId)).data?.map((t: { id: string }) => t.id) || []),
+      adminClient.from('pozvanky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
+      adminClient.from('pozvanky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId).eq('pouzita', true),
+      adminClient.from('ulovky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
+      adminClient.from('ulovky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId).eq('potvrzeno', true),
+      adminClient.from('zlute_karty').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
     ])
 
     const stats: ZavodStats = {
