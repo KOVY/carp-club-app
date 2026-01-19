@@ -60,21 +60,35 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         .eq('id', authUser.id)
         .single()
 
-      // Check if user has admin access
-      const { data: rolesData } = await supabase
-        .from('zavod_role')
-        .select('role')
+      // First check system_admins table (global admin)
+      const { data: systemAdmin } = await supabase
+        .from('system_admins')
+        .select('id, role')
         .eq('user_id', authUser.id)
-        .in('role', ['hlavni_admin', 'poradatel'])
+        .maybeSingle()
 
-      const roles = rolesData as Array<{ role: string }> | null
+      let isHlavniAdmin = false
 
-      if (!roles || roles.length === 0) {
-        router.push('/')
-        return
+      if (systemAdmin) {
+        // User is a system admin - has full access
+        isHlavniAdmin = true
+      } else {
+        // Check zavod_role table
+        const { data: rolesData } = await supabase
+          .from('zavod_role')
+          .select('role')
+          .eq('user_id', authUser.id)
+          .in('role', ['hlavni_admin', 'poradatel'])
+
+        const roles = rolesData as Array<{ role: string }> | null
+
+        if (!roles || roles.length === 0) {
+          router.push('/')
+          return
+        }
+
+        isHlavniAdmin = roles.some(r => r.role === 'hlavni_admin')
       }
-
-      const isHlavniAdmin = roles.some(r => r.role === 'hlavni_admin')
 
       setUser({
         id: authUser.id,

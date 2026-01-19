@@ -26,6 +26,7 @@ import type {
 
 /**
  * Kontrola, zda je uživatel hlavní admin nebo pořadatel
+ * Nejprve kontroluje system_admins tabulku (globální admin)
  */
 async function checkAdminAccess(): Promise<{ userId: string; isHlavniAdmin: boolean } | null> {
   const supabase = await createClient()
@@ -35,7 +36,19 @@ async function checkAdminAccess(): Promise<{ userId: string; isHlavniAdmin: bool
     return null
   }
 
-  // Zkontroluj, zda má uživatel roli hlavni_admin nebo poradatel někde
+  // Nejprve zkontroluj system_admins (globální admin)
+  const { data: systemAdmin } = await supabase
+    .from('system_admins')
+    .select('id, role')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (systemAdmin) {
+    // Systémový admin má plná práva
+    return { userId: user.id, isHlavniAdmin: true }
+  }
+
+  // Pak zkontroluj zavod_role tabulku
   const { data: roles } = await supabase
     .from('zavod_role')
     .select('role')

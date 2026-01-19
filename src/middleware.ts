@@ -183,12 +183,24 @@ async function getUserRoleFromDb(
 
 /**
  * Check if user has access to hlavní admin section
- * User must have hlavni_admin or poradatel role somewhere
+ * User must be system_admin OR have hlavni_admin/poradatel role somewhere
  */
 async function checkHlavniAdminAccess(
   supabase: ReturnType<typeof createServerClient<Database>>,
   userId: string
 ): Promise<boolean> {
+  // First check system_admins table (global admin)
+  const { data: systemAdmin } = await supabase
+    .from('system_admins')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (systemAdmin) {
+    return true
+  }
+
+  // Then check zavod_role table
   const { data: roles } = await supabase
     .from('zavod_role')
     .select('role')

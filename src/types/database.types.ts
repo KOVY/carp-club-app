@@ -423,6 +423,32 @@ export interface Database {
           created_at?: string
         }
       }
+      system_admins: {
+        Row: {
+          id: string
+          user_id: string
+          email: string
+          role: 'hlavni_admin' | 'super_admin'
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          email: string
+          role?: 'hlavni_admin' | 'super_admin'
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          email?: string
+          role?: 'hlavni_admin' | 'super_admin'
+          created_at?: string
+          created_by?: string | null
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -457,6 +483,14 @@ export interface Database {
           pocet_registrovanych: number
         }[]
       }
+      is_system_admin: {
+        Args: { p_user_id?: string }
+        Returns: boolean
+      }
+      get_system_admin_role: {
+        Args: { p_user_id?: string }
+        Returns: string | null
+      }
     }
     Enums: {
       druh_ryby: DruhRyby
@@ -485,3 +519,4 @@ export type ZlutaKartaPoznamka = Tables<'zlute_karty_poznamky'>
 export type AuditLog = Tables<'audit_log'>
 export type ZavodRole = Tables<'zavod_role'>
 export type Pozvanka = Tables<'pozvanky'>
+export type SystemAdmin = Tables<'system_admins'>
