@@ -9,7 +9,7 @@ import { UlovekForm, PotvrzeniList } from "@/components/zavod"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
 import { ErrorState } from "@/components/common/ErrorState"
 import { StatusMessage } from "@/components/common/StatusMessage"
-import { getUlovkyKPotvrzeni } from "@/actions/ulovky.actions"
+import { getUlovkyKPotvrzeni, getUserRoleInZavod } from "@/actions/ulovky.actions"
 import { createClient } from "@/lib/supabase/client"
 import type { UlovekWithRelations, UserRole } from "@/lib/types"
 
@@ -79,42 +79,14 @@ export default function UlovkyPage() {
         return
       }
 
-      // Get user role in this zavod
+      // Get user role in this zavod using server action (bypasses RLS)
       console.log('fetchData: getting role for user', user.id, 'in zavod', zavodId)
-      const { data: roleData, error: roleError } = await supabase
-        .from('zavod_role')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('zavod_id', zavodId)
-        .single()
+      const roleResult = await getUserRoleInZavod(zavodId)
+      console.log('fetchData: role result:', roleResult)
 
-      console.log('fetchData: role result:', { roleData, error: roleError?.message })
-
-      if (roleData) {
-        setUserRole((roleData as { role: UserRole }).role)
-        console.log('fetchData: set userRole to', (roleData as { role: UserRole }).role)
-      } else {
-        // Check if user is team member
-        console.log('fetchData: no zavod_role, checking team membership...')
-        const { data: teams } = await supabase
-          .from('tymy')
-          .select('id')
-          .eq('zavod_id', zavodId)
-
-        if (teams && teams.length > 0) {
-          const teamIds = (teams as { id: string }[]).map(t => t.id)
-          const { data: membership } = await supabase
-            .from('clenove_tymu')
-            .select('role')
-            .eq('user_id', user.id)
-            .in('tym_id', teamIds)
-            .single()
-
-          console.log('fetchData: team membership:', membership)
-          if (membership) {
-            setUserRole((membership as { role: UserRole }).role)
-          }
-        }
+      if (roleResult.success && roleResult.data?.role) {
+        setUserRole(roleResult.data.role)
+        console.log('fetchData: set userRole to', roleResult.data.role)
       }
 
       // Fetch pending catches for confirmation

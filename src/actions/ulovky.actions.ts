@@ -21,17 +21,140 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import { MIN_VAHA_KG, DRUHY_RYB } from '@/lib/constants'
 import { canSubmitUlovek } from '@/lib/permissions'
-import type { 
-  ActionResult, 
-  SubmitUlovekInput, 
+import type {
+  ActionResult,
+  SubmitUlovekInput,
   UlovekWithRelations,
   PermissionContext,
   Zavod,
   Tym,
   ClenTymu,
   DruhRyby,
-  StavPotvrzeni
+  StavPotvrzeni,
+  UserRole
 } from '@/lib/types'
+
+/**
+ * Get user's role in a competition
+ * Uses adminClient to bypass RLS
+ */
+export async function getUserRoleInZavod(zavodId: string): Promise<ActionResult<{ role: UserRole | null; tymId: string | null }>> {
+  try {
+    const supabase = await createClient()
+    const adminClient = createAdminClient()
+
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: true, data: { role: null, tymId: null } }
+    }
+
+    // First check zavod_role
+    const { data: zavodRole } = await adminClient
+      .from('zavod_role')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('zavod_id', zavodId)
+      .single()
+
+    if (zavodRole) {
+      // Get team membership if exists
+      const { data: teams } = await adminClient
+        .from('tymy')
+        .select('id')
+        .eq('zavod_id', zavodId)
+
+      if (teams && teams.length > 0) {
+        const teamIds = (teams as { id: string }[]).map(t => t.id)
+        const { data: membership } = await adminClient
+          .from('clenove_tymu')
+          .select('tym_id')
+          .eq('user_id', user.id)
+          .in('tym_id', teamIds)
+          .single()
+
+        return {
+          success: true,
+          data: {
+            role: (zavodRole as { role: UserRole }).role,
+            tymId: membership ? (membership as { tym_id: string }).tym_id : null
+          }
+        }
+      }
+
+      return { success: true, data: { role: (zavodRole as { role: UserRole }).role, tymId: null } }
+    }
+
+    // Check team membership via invitation
+    const { data: teams } = await adminClient
+      .from('tymy')
+      .select('id')
+      .eq('zavod_id', zavodId)
+
+    if (teams && teams.length > 0) {
+      const teamIds = (teams as { id: string }[]).map(t => t.id)
+
+      // Check direct membership
+      const { data: membership } = await adminClient
+        .from('clenove_tymu')
+        .select('tym_id, role')
+        .eq('user_id', user.id)
+        .in('tym_id', teamIds)
+        .single()
+
+      if (membership) {
+        return {
+          success: true,
+          data: {
+            role: (membership as { role: UserRole }).role,
+            tymId: (membership as { tym_id: string }).tym_id
+          }
+        }
+      }
+
+      // Check via invitation
+      const { data: profile } = await adminClient
+        .from('profiles')
+        .select('email')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.email) {
+        const { data: invitation } = await adminClient
+          .from('pozvanky')
+          .select('tym_id, role')
+          .eq('zavod_id', zavodId)
+          .ilike('email', (profile as { email: string }).email)
+          .single()
+
+        if (invitation?.tym_id) {
+          // Auto-create team membership
+          await (adminClient.from('clenove_tymu') as any)
+            .upsert({
+              tym_id: (invitation as { tym_id: string }).tym_id,
+              user_id: user.id,
+              role: (invitation as { role: string }).role || 'zavodnik',
+            }, { onConflict: 'tym_id,user_id' })
+
+          return {
+            success: true,
+            data: {
+              role: ((invitation as { role: string }).role || 'zavodnik') as UserRole,
+              tymId: (invitation as { tym_id: string }).tym_id
+            }
+          }
+        }
+      }
+    }
+
+    return { success: true, data: { role: null, tymId: null } }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
 
 /**
  * Submit a new catch (úlovek)
