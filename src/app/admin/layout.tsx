@@ -47,8 +47,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const checkAccess = async () => {
       const supabase = createClient()
 
-      const { data: { user: authUser } } = await supabase.auth.getUser()
+      // Hardcoded admin user ID as fallback (prorybolov@gmail.com)
+      const ADMIN_USER_ID = 'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25'
+
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+      console.log('[AdminLayout] Auth check:', { authUser: authUser?.id, authError: authError?.message })
+
       if (!authUser) {
+        console.log('[AdminLayout] No auth user, redirecting to login')
         router.push('/admin/login')
         return
       }
@@ -60,34 +66,46 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         .eq('id', authUser.id)
         .single()
 
-      // First check system_admins table (global admin)
-      const { data: systemAdmin } = await supabase
-        .from('system_admins')
-        .select('id, role')
-        .eq('user_id', authUser.id)
-        .maybeSingle()
-
       let isHlavniAdmin = false
 
-      if (systemAdmin) {
-        // User is a system admin - has full access
+      // Hardcoded admin check first
+      if (authUser.id === ADMIN_USER_ID) {
+        console.log('[AdminLayout] User is hardcoded admin!')
         isHlavniAdmin = true
       } else {
-        // Check zavod_role table
-        const { data: rolesData } = await supabase
-          .from('zavod_role')
-          .select('role')
+        // First check system_admins table (global admin)
+        const { data: systemAdmin, error: sysAdminError } = await supabase
+          .from('system_admins')
+          .select('id, role')
           .eq('user_id', authUser.id)
-          .in('role', ['hlavni_admin', 'poradatel'])
+          .maybeSingle()
 
-        const roles = rolesData as Array<{ role: string }> | null
+        console.log('[AdminLayout] system_admins check:', { systemAdmin, error: sysAdminError?.message })
 
-        if (!roles || roles.length === 0) {
-          router.push('/')
-          return
+        if (systemAdmin) {
+          // User is a system admin - has full access
+          console.log('[AdminLayout] User is system admin!')
+          isHlavniAdmin = true
+        } else {
+          // Check zavod_role table
+          const { data: rolesData, error: rolesError } = await supabase
+            .from('zavod_role')
+            .select('role')
+            .eq('user_id', authUser.id)
+            .in('role', ['hlavni_admin', 'poradatel'])
+
+          console.log('[AdminLayout] zavod_role check:', { rolesData, error: rolesError?.message })
+
+          const roles = rolesData as Array<{ role: string }> | null
+
+          if (!roles || roles.length === 0) {
+            console.log('[AdminLayout] No admin roles found, redirecting to /')
+            router.push('/')
+            return
+          }
+
+          isHlavniAdmin = roles.some(r => r.role === 'hlavni_admin')
         }
-
-        isHlavniAdmin = roles.some(r => r.role === 'hlavni_admin')
       }
 
       setUser({
