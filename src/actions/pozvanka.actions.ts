@@ -90,7 +90,7 @@ async function checkZavodAdminAccess(zavodId: string): Promise<string | null> {
  */
 export async function getPozvankyByZavod(zavodId: string): Promise<ActionResult<Pozvanka[]>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     const userId = await checkZavodAdminAccess(zavodId)
     if (!userId) {
@@ -103,7 +103,7 @@ export async function getPozvankyByZavod(zavodId: string): Promise<ActionResult<
       }
     }
 
-    const { data: pozvanky, error } = await supabase
+    const { data: pozvanky, error } = await adminClient
       .from('pozvanky')
       .select('*')
       .eq('zavod_id', zavodId)
@@ -133,10 +133,10 @@ export async function getPozvankyByZavod(zavodId: string): Promise<ActionResult<
  */
 export async function getPozvankyByTym(tymId: string): Promise<ActionResult<Pozvanka[]>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     // Získat závod_id z týmu
-    const { data: tymData } = await supabase
+    const { data: tymData } = await adminClient
       .from('tymy')
       .select('zavod_id')
       .eq('id', tymId)
@@ -165,7 +165,7 @@ export async function getPozvankyByTym(tymId: string): Promise<ActionResult<Pozv
       }
     }
 
-    const { data: pozvanky, error } = await supabase
+    const { data: pozvanky, error } = await adminClient
       .from('pozvanky')
       .select('*')
       .eq('tym_id', tymId)
@@ -470,10 +470,10 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
  */
 export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<Pozvanka>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     // Získat pozvánku s informacemi o závodu a týmu
-    const { data: existingPozvankaData } = await supabase
+    const { data: existingPozvankaData } = await adminClient
       .from('pozvanky')
       .select('*, zavod:zavody(nazev, misto, datum_start, datum_end), tym:tymy(nazev)')
       .eq('id', pozvankaId)
@@ -544,7 +544,7 @@ export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<P
     }
 
     // Vrátit existující pozvánku
-    const { data: updatedPozvanka } = await supabase
+    const { data: updatedPozvanka } = await adminClient
       .from('pozvanky')
       .select('*')
       .eq('id', pozvankaId)
@@ -564,10 +564,10 @@ export async function resendPozvanka(pozvankaId: string): Promise<ActionResult<P
  */
 export async function deletePozvanka(pozvankaId: string): Promise<ActionResult<void>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     // Získat pozvánku
-    const { data: existingPozvankaData2 } = await supabase
+    const { data: existingPozvankaData2 } = await adminClient
       .from('pozvanky')
       .select('zavod_id, pouzita')
       .eq('id', pozvankaId)
@@ -609,7 +609,7 @@ export async function deletePozvanka(pozvankaId: string): Promise<ActionResult<v
       }
     }
 
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('pozvanky')
       .delete()
       .eq('id', pozvankaId)
