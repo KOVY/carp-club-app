@@ -16,6 +16,7 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getUserRoleInZavod } from '@/actions/ulovky.actions'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { Tym, ClenTymu } from '@/lib/types'
 
@@ -91,15 +92,12 @@ export function usePendingConfirmations({
       }
 
       const teamsData = teams as Pick<Tym, 'id' | 'peg_cislo'>[]
-      const teamIds = teamsData.map(t => t.id)
 
-      // Find user's team membership
-      const { data: membership } = await supabase
-        .from('clenove_tymu')
-        .select('tym_id, role')
-        .eq('user_id', user.id)
-        .in('tym_id', teamIds)
-        .single()
+      // Find user's team membership using server action (bypasses RLS)
+      const roleResult = await getUserRoleInZavod(zavodId)
+      const membership = roleResult.success && roleResult.data?.tymId
+        ? { tym_id: roleResult.data.tymId, role: roleResult.data.role }
+        : null
 
       // Get catches waiting for confirmation (stav = 'ceka')
       const { data: ulovky, error: ulovkyError } = await supabase
