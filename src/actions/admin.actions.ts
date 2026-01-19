@@ -18,7 +18,11 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
+
+// Hardcoded admin user ID (prorybolov@gmail.com)
+const ADMIN_USER_ID = 'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25'
 import { canManageZavod, canIssueYellowCard } from '@/lib/permissions'
 import type { 
   ActionResult, 
@@ -851,14 +855,14 @@ export async function setEmbargo(
 
 /**
  * Create a new team in a competition
- * 
+ *
  * Requirement 2.1: Create team with captain and up to 3 members
- * Only poradatel can create teams
+ * Only poradatel or system admin can create teams
  */
 export async function createTym(input: CreateTymInput): Promise<ActionResult<{ tymId: string }>> {
   try {
     const supabase = await createClient()
-    
+
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
@@ -884,52 +888,70 @@ export async function createTym(input: CreateTymInput): Promise<ActionResult<{ t
       }
     }
 
-    if (!kapitanId) {
-      return {
-        success: false,
-        error: {
-          code: 'INVALID_INPUT',
-          message: 'Kapitán týmu je povinný',
-        },
+    // Check if user is system admin first
+    const isSystemAdmin = user.id === ADMIN_USER_ID
+
+    if (!isSystemAdmin) {
+      // Check system_admins table
+      const { data: sysAdmin } = await supabase
+        .from('system_admins')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (!sysAdmin) {
+        // Check if user is poradatel for this competition
+        const { data: zavodRole } = await supabase
+          .from('zavod_role')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('zavod_id', zavodId)
+          .single()
+
+        if (!zavodRole) {
+          return {
+            success: false,
+            error: {
+              code: ErrorCodes.FORBIDDEN,
+              message: ErrorMessages[ErrorCodes.FORBIDDEN],
+            },
+          }
+        }
+
+        const permissionCtx: PermissionContext = {
+          userId: user.id,
+          role: (zavodRole as Pick<ZavodRole, 'role'>).role,
+          zavodId,
+        }
+
+        if (!canManageZavod(permissionCtx)) {
+          return {
+            success: false,
+            error: {
+              code: ErrorCodes.FORBIDDEN,
+              message: ErrorMessages[ErrorCodes.FORBIDDEN],
+            },
+          }
+        }
       }
     }
 
-    // Check if user is poradatel for this competition
-    const { data: zavodRole } = await supabase
-      .from('zavod_role')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('zavod_id', zavodId)
-      .single()
-
-    if (!zavodRole) {
+    // Use admin client to bypass RLS
+    let adminClient
+    try {
+      adminClient = createAdminClient()
+    } catch {
       return {
         success: false,
         error: {
-          code: ErrorCodes.FORBIDDEN,
-          message: ErrorMessages[ErrorCodes.FORBIDDEN],
-        },
-      }
-    }
-
-    const permissionCtx: PermissionContext = {
-      userId: user.id,
-      role: (zavodRole as Pick<ZavodRole, 'role'>).role,
-      zavodId,
-    }
-
-    if (!canManageZavod(permissionCtx)) {
-      return {
-        success: false,
-        error: {
-          code: ErrorCodes.FORBIDDEN,
-          message: ErrorMessages[ErrorCodes.FORBIDDEN],
+          code: ErrorCodes.DATABASE_ERROR,
+          message: 'Chybí konfigurace. Kontaktujte administrátora.',
         },
       }
     }
 
     // Verify zavod exists
-    const { data: zavod, error: zavodError } = await supabase
+    const { data: zavod, error: zavodError } = await adminClient
       .from('zavody')
       .select('id')
       .eq('id', zavodId)
@@ -945,42 +967,26 @@ export async function createTym(input: CreateTymInput): Promise<ActionResult<{ t
       }
     }
 
-    // Verify captain exists
-    const { data: kapitan, error: kapitanError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', kapitanId)
-      .single()
-
-    if (kapitanError || !kapitan) {
-      return {
-        success: false,
-        error: {
-          code: 'INVALID_INPUT',
-          message: 'Kapitán nebyl nalezen',
-        },
-      }
-    }
-
     // Generate unique variable symbol for payment
     const variabilniSymbol = `${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
 
-    // Create the team
+    // Create the team - kapitanId is optional for admin-created teams
     const insertData = {
       zavod_id: zavodId,
       nazev: nazev.trim(),
-      kapitan_id: kapitanId,
+      kapitan_id: kapitanId || user.id, // Use current user if no captain specified
       variabilni_symbol: variabilniSymbol,
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: tym, error: insertError } = await (supabase
+    const { data: tym, error: insertError } = await (adminClient
       .from('tymy') as any)
       .insert(insertData)
       .select('id')
       .single()
 
     if (insertError || !tym) {
+      console.error('[createTym] Insert error:', insertError)
       return {
         success: false,
         error: {
@@ -993,42 +999,35 @@ export async function createTym(input: CreateTymInput): Promise<ActionResult<{ t
 
     const tymId = (tym as { id: string }).id
 
-    // Add captain as team member with role 'kapitan'
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: kapitanMemberError } = await (supabase
-      .from('clenove_tymu') as any)
-      .insert({
-        tym_id: tymId,
-        user_id: kapitanId,
-        role: 'kapitan',
-      })
+    // Add captain as team member with role 'kapitan' (if kapitanId provided)
+    if (kapitanId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: kapitanMemberError } = await (adminClient
+        .from('clenove_tymu') as any)
+        .insert({
+          tym_id: tymId,
+          user_id: kapitanId,
+          role: 'kapitan',
+        })
 
-    if (kapitanMemberError) {
-      console.error('Failed to add captain as team member:', kapitanMemberError)
+      if (kapitanMemberError) {
+        console.error('Failed to add captain as team member:', kapitanMemberError)
+      }
     }
 
     // Add additional members if provided
     if (clenoveIds && clenoveIds.length > 0) {
       // Limit to 3 additional members (requirement 2.1)
       const membersToAdd = clenoveIds.slice(0, 3).filter(id => id !== kapitanId)
-      
-      for (const clenId of membersToAdd) {
-        // Verify member exists
-        const { data: clen } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', clenId)
-          .single()
 
-        if (clen) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase.from('clenove_tymu') as any)
-            .insert({
-              tym_id: tymId,
-              user_id: clenId,
-              role: 'zavodnik',
-            })
-        }
+      for (const clenId of membersToAdd) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (adminClient.from('clenove_tymu') as any)
+          .insert({
+            tym_id: tymId,
+            user_id: clenId,
+            role: 'zavodnik',
+          })
       }
     }
 
