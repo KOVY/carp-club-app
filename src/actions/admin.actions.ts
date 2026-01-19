@@ -189,12 +189,13 @@ export async function createZavod(input: CreateZavodInput): Promise<ActionResult
  * Audit log is automatically handled by database trigger
  */
 export async function updateZavod(
-  zavodId: string, 
+  zavodId: string,
   input: UpdateZavodInput
 ): Promise<ActionResult<{ zavod: Zavod }>> {
   try {
     const supabase = await createClient()
-    
+    const adminClient = createAdminClient()
+
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
@@ -207,31 +208,45 @@ export async function updateZavod(
       }
     }
 
-    // Check if user is poradatel for this competition
-    const { data: zavodRole } = await supabase
-      .from('zavod_role')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('zavod_id', zavodId)
-      .single()
+    // Check hardcoded admin first
+    let hasAccess = false
+    if (user.id === ADMIN_USER_ID) {
+      hasAccess = true
+    }
 
-    if (!zavodRole) {
-      return {
-        success: false,
-        error: {
-          code: ErrorCodes.FORBIDDEN,
-          message: ErrorMessages[ErrorCodes.FORBIDDEN],
-        },
+    // Check system_admins table
+    if (!hasAccess) {
+      const { data: sysAdmin } = await adminClient
+        .from('system_admins')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (sysAdmin) {
+        hasAccess = true
       }
     }
 
-    const permissionCtx: PermissionContext = {
-      userId: user.id,
-      role: (zavodRole as Pick<ZavodRole, 'role'>).role,
-      zavodId,
+    // Check zavod_role if not system admin
+    if (!hasAccess) {
+      const { data: zavodRole } = await adminClient
+        .from('zavod_role')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('zavod_id', zavodId)
+        .single()
+
+      if (zavodRole) {
+        const permissionCtx: PermissionContext = {
+          userId: user.id,
+          role: (zavodRole as Pick<ZavodRole, 'role'>).role,
+          zavodId,
+        }
+        hasAccess = canManageZavod(permissionCtx)
+      }
     }
 
-    if (!canManageZavod(permissionCtx)) {
+    if (!hasAccess) {
       return {
         success: false,
         error: {
@@ -242,7 +257,7 @@ export async function updateZavod(
     }
 
     // Get current zavod to validate updates
-    const { data: currentZavod, error: getError } = await supabase
+    const { data: currentZavod, error: getError } = await adminClient
       .from('zavody')
       .select('*')
       .eq('id', zavodId)
@@ -371,7 +386,7 @@ export async function updateZavod(
 
     // Update the competition (audit log is handled by database trigger)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: updatedZavod, error: updateError } = await (supabase
+    const { data: updatedZavod, error: updateError } = await (adminClient
       .from('zavody') as any)
       .update(updateData)
       .eq('id', zavodId)
