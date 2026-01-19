@@ -212,11 +212,10 @@ export async function getZavodDetail(zavodId: string): Promise<ActionResult<{
 
 /**
  * Vytvořit nový závod (pro hlavního admina)
+ * Používá admin client pro obejití RLS
  */
 export async function createZavodAsAdmin(input: CreateZavodInput): Promise<ActionResult<{ zavodId: string }>> {
   try {
-    const supabase = await createClient()
-
     const access = await checkAdminAccess()
     if (!access) {
       return {
@@ -224,6 +223,20 @@ export async function createZavodAsAdmin(input: CreateZavodInput): Promise<Actio
         error: {
           code: ErrorCodes.UNAUTHORIZED,
           message: 'Nemáte oprávnění vytvářet závody',
+        },
+      }
+    }
+
+    // Použít admin klient pro obejití RLS
+    let adminClient
+    try {
+      adminClient = createAdminClient()
+    } catch {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: 'Chybí konfigurace pro vytváření závodů. Kontaktujte administrátora.',
         },
       }
     }
@@ -264,7 +277,7 @@ export async function createZavodAsAdmin(input: CreateZavodInput): Promise<Actio
       }
     }
 
-    // Vložit závod
+    // Vložit závod pomocí admin klienta
     const insertData = {
       nazev: nazev.trim(),
       misto: misto?.trim() || null,
@@ -276,7 +289,7 @@ export async function createZavodAsAdmin(input: CreateZavodInput): Promise<Actio
       stav: 'priprava' as const,
     }
 
-    const { data: zavodData, error: insertError } = await supabase
+    const { data: zavodData, error: insertError } = await adminClient
       .from('zavody')
       .insert(insertData as any)
       .select('id')
@@ -285,6 +298,7 @@ export async function createZavodAsAdmin(input: CreateZavodInput): Promise<Actio
     const zavodId = (zavodData as { id: string } | null)?.id
 
     if (insertError || !zavodId) {
+      console.error('[createZavodAsAdmin] Insert error:', insertError)
       return {
         success: false,
         error: {
@@ -296,7 +310,7 @@ export async function createZavodAsAdmin(input: CreateZavodInput): Promise<Actio
     }
 
     // Přiřadit tvůrce jako pořadatele závodu
-    const { error: roleError } = await supabase
+    const { error: roleError } = await adminClient
       .from('zavod_role')
       .insert({
         zavod_id: zavodId,
@@ -305,8 +319,9 @@ export async function createZavodAsAdmin(input: CreateZavodInput): Promise<Actio
       } as any)
 
     if (roleError) {
+      console.error('[createZavodAsAdmin] Role error:', roleError)
       // Zkusíme smazat závod pokud se nepodařilo přidat roli
-      await supabase.from('zavody').delete().eq('id', zavodId)
+      await adminClient.from('zavody').delete().eq('id', zavodId)
       return {
         success: false,
         error: {
