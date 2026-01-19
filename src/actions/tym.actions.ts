@@ -85,7 +85,7 @@ async function checkZavodAdminAccess(zavodId: string): Promise<string | null> {
  */
 export async function getTymyOverview(zavodId: string): Promise<ActionResult<TymOverview[]>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     const userId = await checkZavodAdminAccess(zavodId)
     if (!userId) {
@@ -99,12 +99,12 @@ export async function getTymyOverview(zavodId: string): Promise<ActionResult<Tym
     }
 
     // Použij DB funkci pro přehled
-    const { data, error } = await (supabase
+    const { data, error } = await (adminClient
       .rpc as any)('get_tymy_overview', { p_zavod_id: zavodId })
 
     if (error) {
       // Fallback - ruční dotaz
-      const { data: tymyData, error: tymyError } = await supabase
+      const { data: tymyData, error: tymyError } = await adminClient
         .from('tymy')
         .select('*')
         .eq('zavod_id', zavodId)
@@ -131,17 +131,17 @@ export async function getTymyOverview(zavodId: string): Promise<ActionResult<Tym
       // Manuálně spočítat statistiky
       const overview: TymOverview[] = await Promise.all(
         (tymy || []).map(async (tym) => {
-          const { count: clenCount } = await supabase
+          const { count: clenCount } = await adminClient
             .from('clenove_tymu')
             .select('*', { count: 'exact', head: true })
             .eq('tym_id', tym.id)
 
-          const { count: pozvankyCount } = await supabase
+          const { count: pozvankyCount } = await adminClient
             .from('pozvanky')
             .select('*', { count: 'exact', head: true })
             .eq('tym_id', tym.id)
 
-          const { count: registrovanychCount } = await supabase
+          const { count: registrovanychCount } = await adminClient
             .from('pozvanky')
             .select('*', { count: 'exact', head: true })
             .eq('tym_id', tym.id)
@@ -177,10 +177,10 @@ export async function getTymyOverview(zavodId: string): Promise<ActionResult<Tym
  */
 export async function getTymDetail(tymId: string): Promise<ActionResult<TymWithClenove>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     // Získat tým
-    const { data: tymData, error: tymError } = await supabase
+    const { data: tymData, error: tymError } = await adminClient
       .from('tymy')
       .select('*')
       .eq('id', tymId)
@@ -222,14 +222,14 @@ export async function getTymDetail(tymId: string): Promise<ActionResult<TymWithC
     }
 
     // Získat kapitána
-    const { data: kapitan } = await supabase
+    const { data: kapitan } = await adminClient
       .from('profiles')
       .select('*')
       .eq('id', tym.kapitan_id)
       .single()
 
     // Získat členy s profily
-    const { data: clenoveData } = await supabase
+    const { data: clenoveData } = await adminClient
       .from('clenove_tymu')
       .select(`
         id,
@@ -369,10 +369,10 @@ export async function updateTym(
   }
 ): Promise<ActionResult<Tym>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     // Získat tým pro kontrolu přístupu
-    const { data: existingTymData } = await supabase
+    const { data: existingTymData } = await adminClient
       .from('tymy')
       .select('zavod_id')
       .eq('id', tymId)
@@ -401,7 +401,7 @@ export async function updateTym(
       }
     }
 
-    const { data: tym, error } = await (supabase
+    const { data: tym, error } = await (adminClient
       .from('tymy') as any)
       .update(input)
       .eq('id', tymId)
@@ -433,10 +433,10 @@ export async function updateTym(
  */
 export async function deleteTym(tymId: string): Promise<ActionResult<void>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     // Získat tým pro kontrolu přístupu
-    const { data: existingTymDeleteData } = await supabase
+    const { data: existingTymDeleteData } = await adminClient
       .from('tymy')
       .select('zavod_id')
       .eq('id', tymId)
@@ -466,7 +466,7 @@ export async function deleteTym(tymId: string): Promise<ActionResult<void>> {
     }
 
     // Zkontroluj, zda tým nemá úlovky
-    const { count: ulovkyCount } = await supabase
+    const { count: ulovkyCount } = await adminClient
       .from('ulovky')
       .select('*', { count: 'exact', head: true })
       .eq('tym_id', tymId)
@@ -481,7 +481,7 @@ export async function deleteTym(tymId: string): Promise<ActionResult<void>> {
       }
     }
 
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('tymy')
       .delete()
       .eq('id', tymId)
@@ -511,7 +511,7 @@ export async function deleteTym(tymId: string): Promise<ActionResult<void>> {
  */
 export async function losujPegy(zavodId: string): Promise<ActionResult<void>> {
   try {
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     const userId = await checkZavodAdminAccess(zavodId)
     if (!userId) {
@@ -525,7 +525,7 @@ export async function losujPegy(zavodId: string): Promise<ActionResult<void>> {
     }
 
     // Získat všechny týmy závodu
-    const { data: tymyLosData, error: tymyError } = await supabase
+    const { data: tymyLosData, error: tymyError } = await adminClient
       .from('tymy')
       .select('id')
       .eq('zavod_id', zavodId)
@@ -551,7 +551,7 @@ export async function losujPegy(zavodId: string): Promise<ActionResult<void>> {
 
     // Přiřadit pegy
     for (let i = 0; i < shuffled.length; i++) {
-      const { error: updateError } = await (supabase
+      const { error: updateError } = await (adminClient
         .from('tymy') as any)
         .update({ peg_cislo: i + 1 })
         .eq('id', shuffled[i].id)
