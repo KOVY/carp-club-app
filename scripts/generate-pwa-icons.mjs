@@ -13,7 +13,7 @@ const publicDir = path.join(__dirname, '..', 'public');
 const invokeUrl = "https://ai.api.nvidia.com/v1/genai/stabilityai/stable-diffusion-3-medium";
 
 const headers = {
-  "Authorization": "Bearer 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",
+  "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
   "Accept": "application/json",
   "Content-Type": "application/json"
 };
