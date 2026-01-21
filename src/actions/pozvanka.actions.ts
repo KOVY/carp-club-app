@@ -291,15 +291,16 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
       // Uživatel už existuje - najít ho v databázi
       console.log('User already exists, searching...')
 
-      // Hledat uživatele přes auth.users tabulku
+      // Hledat uživatele přes profiles tabulku
       const { data: existingUserData } = await adminClient
         .from('profiles')
         .select('id')
         .eq('email', email)
         .single()
 
-      if (existingUserData?.id) {
-        targetUserId = existingUserData.id
+      const existingProfile = existingUserData as { id: string } | null
+      if (existingProfile?.id) {
+        targetUserId = existingProfile.id
         console.log('Found existing user via profiles:', targetUserId)
       } else {
         // Fallback: prohledat auth uživatele po stránkách
