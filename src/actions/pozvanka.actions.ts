@@ -273,37 +273,82 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
     // 1. Vytvořit nebo najít uživatele
     let targetUserId: string
 
-    // Zkontrolovat jestli uživatel existuje - použít getUserByEmail místo listUsers
-    const { data: existingUserData } = await adminClient.auth.admin.getUserByEmail(email)
+    // Nejprve zkusit vytvořit uživatele
+    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+      email,
+      email_confirm: true, // Automaticky potvrdit email
+      user_metadata: {
+        jmeno,
+        telefon: input.telefon?.trim() || null,
+      },
+    })
 
-    if (existingUserData?.user) {
-      targetUserId = existingUserData.user.id
-      console.log('User already exists:', targetUserId)
-    } else {
-      // Vytvořit nového uživatele pomocí Admin API
-      const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-        email,
-        email_confirm: true, // Automaticky potvrdit email
-        user_metadata: {
-          jmeno,
-          telefon: input.telefon?.trim() || null,
-        },
-      })
-
-      if (createError || !newUser.user) {
-        console.error('Failed to create user:', createError)
-        return {
-          success: false,
-          error: {
-            code: 'USER_CREATION_FAILED',
-            message: 'Nepodařilo se vytvořit uživatelský účet',
-            details: { originalError: createError?.message },
-          },
-        }
-      }
-
+    if (newUser?.user) {
+      // Nový uživatel úspěšně vytvořen
       targetUserId = newUser.user.id
       console.log('Created new user:', targetUserId)
+    } else if (createError?.message?.includes('already been registered')) {
+      // Uživatel už existuje - najít ho v databázi
+      console.log('User already exists, searching...')
+
+      // Hledat uživatele přes auth.users tabulku
+      const { data: existingUserData } = await adminClient
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single()
+
+      if (existingUserData?.id) {
+        targetUserId = existingUserData.id
+        console.log('Found existing user via profiles:', targetUserId)
+      } else {
+        // Fallback: prohledat auth uživatele po stránkách
+        let found = false
+        let page = 1
+        const perPage = 1000
+
+        while (!found) {
+          const { data: usersData } = await adminClient.auth.admin.listUsers({
+            page,
+            perPage,
+          })
+
+          if (!usersData?.users || usersData.users.length === 0) break
+
+          const existingUser = usersData.users.find(u => u.email?.toLowerCase() === email)
+          if (existingUser) {
+            targetUserId = existingUser.id
+            console.log('Found existing user via listUsers:', targetUserId)
+            found = true
+            break
+          }
+
+          if (usersData.users.length < perPage) break
+          page++
+        }
+
+        if (!found) {
+          console.error('User exists but could not be found:', email)
+          return {
+            success: false,
+            error: {
+              code: 'USER_NOT_FOUND',
+              message: 'Uživatel existuje, ale nepodařilo se ho najít',
+            },
+          }
+        }
+      }
+    } else {
+      // Jiná chyba při vytváření
+      console.error('Failed to create user:', createError)
+      return {
+        success: false,
+        error: {
+          code: 'USER_CREATION_FAILED',
+          message: 'Nepodařilo se vytvořit uživatelský účet',
+          details: { originalError: createError?.message },
+        },
+      }
     }
 
     // 2. Vytvořit nebo aktualizovat profil
