@@ -69,7 +69,7 @@ export function MobileMenu({
   // Build navigation items based on context
   const getNavItems = (): NavItem[] => {
     const baseItems: NavItem[] = [
-      { href: "/", label: "Závody", icon: Home, exact: true },
+      { href: "/#zavody", label: "Závody", icon: Home },
       { href: "/sezona", label: "Liga 2026", icon: Trophy },
       { href: "/kalendar", label: "Kalendář", icon: Calendar },
       { href: "/archiv", label: "Archiv", icon: Archive },
@@ -136,6 +136,10 @@ export function MobileMenu({
 
   // Check if nav item is active
   const isActive = (item: NavItem) => {
+    // Handle anchor links (e.g., /#zavody)
+    if (item.href.startsWith('/#')) {
+      return pathname === '/'
+    }
     if (item.exact) {
       return pathname === item.href
     }

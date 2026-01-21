@@ -54,37 +54,32 @@ export function BottomNavigation({
         return [
           {
             icon: Home,
-            label: "Přehled",
+            label: "Info",
             href: `/zavod/${zavodId}`,
           },
           {
             icon: Trophy,
-            label: "Pořadí",
+            label: "Live",
             href: `/zavod/${zavodId}/leaderboard`,
           },
           {
             icon: ImageIcon,
-            label: "Galerie",
+            label: "Foto",
             href: `/zavod/${zavodId}/galerie`,
-          },
-          {
-            icon: FileText,
-            label: "Pravidla",
-            href: `/zavod/${zavodId}/pravidla`,
           },
         ]
       }
 
-      // ZÁVODNÍCI (přihlášení) - plná navigace
+      // ZÁVODNÍCI (přihlášení) - kompaktní navigace (max 5 položek)
       const allItems: BottomNavItem[] = [
         {
           icon: Home,
-          label: "Domů",
+          label: "Info",
           href: `/zavod/${zavodId}`,
         },
         {
           icon: Trophy,
-          label: "Pořadí",
+          label: "Live",
           href: `/zavod/${zavodId}/leaderboard`,
         },
         // "Přidat úlovek" - jen pro přihlášené s rolí
@@ -98,20 +93,14 @@ export function BottomNavigation({
         // "Potvrzení" - pro závodníky a kapitány
         {
           icon: CheckCircle,
-          label: "Potvrzení",
+          label: "Potvrdit",
           href: `/zavod/${zavodId}/potvrzeni`,
           badge: pendingCount > 0 ? pendingCount : undefined,
           roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
         },
-        // Galerie pro všechny přihlášené
-        {
-          icon: ImageIcon,
-          label: "Galerie",
-          href: `/zavod/${zavodId}/galerie`,
-        },
         {
           icon: User,
-          label: "Profil",
+          label: "Účet",
           href: "/profil",
         },
       ]
@@ -209,7 +198,7 @@ export function BottomNavigation({
               href={item.href}
               className={cn(
                 "relative flex flex-col items-center justify-center",
-                "min-w-[44px] min-h-[44px] px-3 py-2",
+                "min-w-[40px] min-h-[44px] px-1.5 py-2",
                 "transition-colors duration-150 ease-out",
                 active
                   ? "text-primary"

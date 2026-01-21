@@ -27,7 +27,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: "/", label: "Závody", exact: true },
+  { href: "/#zavody", label: "Závody" },
   { href: "/sezona", label: "Liga 2026" },
   { href: "/kalendar", label: "Kalendář" },
   { href: "/archiv", label: "Archiv" },
@@ -66,6 +66,10 @@ export function Header({ user, onSignOut }: HeaderProps) {
 
   // Check if nav item is active
   const isActive = (item: NavItem) => {
+    // Handle anchor links (e.g., /#zavody)
+    if (item.href.startsWith('/#')) {
+      return pathname === '/'
+    }
     if (item.exact) {
       return pathname === item.href
     }

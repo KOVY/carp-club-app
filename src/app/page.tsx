@@ -120,18 +120,11 @@ function ZavodCard({ zavod, isArchive = false }: { zavod: ZavodWithSoutez; isArc
 
         <div className="pt-2 flex gap-2">
           <Button asChild variant={isArchive ? "outline" : "default"} size="sm" className="flex-1 hover-scale">
-            <Link href={`/zavod/${zavod.id}`}>
+            <Link href={`/zavod/${zavod.id}/leaderboard`}>
               <Trophy className="h-4 w-4 mr-2" />
-              {isArchive ? 'Zobrazit výsledky' : 'Vstoupit'}
+              {isArchive ? 'Zobrazit výsledky' : 'Sledovat live'}
             </Link>
           </Button>
-          {!isArchive && (
-            <Button asChild variant="outline" size="sm" className="hover-scale">
-              <Link href={`/zavod/${zavod.id}/verejnost`}>
-                Veřejný přístup
-              </Link>
-            </Button>
-          )}
         </div>
       </CardContent>
     </Card>
@@ -148,7 +141,7 @@ export default async function Home() {
 
       {/* Current competitions - PRIORITY: show immediately after hero */}
       {aktualni.length > 0 && (
-        <section className="py-12 md:py-20 container mx-auto px-4">
+        <section id="zavody" className="py-12 md:py-20 container mx-auto px-4 scroll-mt-20">
           <div className="flex items-center justify-between mb-6 md:mb-8">
             <h2 className="text-xl md:text-3xl font-bold">
               Aktuální závody
