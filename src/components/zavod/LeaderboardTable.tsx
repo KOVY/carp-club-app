@@ -106,30 +106,45 @@ export function LeaderboardTable({
         </GlassCardDescription>
       </GlassCardHeader>
       <GlassCardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-16">#</TableHead>
-              <TableHead>Tým</TableHead>
-              <TableHead className="text-center">Peg</TableHead>
-              <TableHead className="text-center">Ryby</TableHead>
-              {weightsVisible && (
-                <TableHead className="text-right">Skóre</TableHead>
-              )}
-              <TableHead className="text-center w-16">ŽK</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {entries.map((entry, index) => (
-              <LeaderboardRow
-                key={entry.tym.id}
-                entry={entry}
-                position={index + 1}
-                weightsVisible={weightsVisible}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        {/* Mobile Cards View */}
+        <div className="md:hidden space-y-3">
+          {entries.map((entry, index) => (
+            <LeaderboardCard
+              key={entry.tym.id}
+              entry={entry}
+              position={index + 1}
+              weightsVisible={weightsVisible}
+            />
+          ))}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16">#</TableHead>
+                <TableHead>Tým</TableHead>
+                <TableHead className="text-center">Peg</TableHead>
+                <TableHead className="text-center">Ryby</TableHead>
+                {weightsVisible && (
+                  <TableHead className="text-right">Skóre</TableHead>
+                )}
+                <TableHead className="text-center w-16">ŽK</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {entries.map((entry, index) => (
+                <LeaderboardRow
+                  key={entry.tym.id}
+                  entry={entry}
+                  position={index + 1}
+                  weightsVisible={weightsVisible}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </GlassCardContent>
     </GlassCard>
   )
@@ -139,6 +154,98 @@ interface LeaderboardRowProps {
   entry: LeaderboardEntry
   position: number
   weightsVisible: boolean
+}
+
+/**
+ * Mobile card view for leaderboard entry
+ */
+function LeaderboardCard({ entry, position, weightsVisible }: LeaderboardRowProps) {
+  const { tym, skore, pocetRyb, zluteKarty } = entry
+  const isDisqualified = zluteKarty >= 2
+
+  const getMedalColor = (pos: number) => {
+    switch (pos) {
+      case 1:
+        return "text-yellow-500 bg-yellow-500/10"
+      case 2:
+        return "text-gray-400 bg-gray-500/10"
+      case 3:
+        return "text-amber-600 bg-amber-500/10"
+      default:
+        return "text-muted-foreground bg-muted/50"
+    }
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 p-3 rounded-lg border",
+        isDisqualified && "opacity-50 bg-destructive/5 border-destructive/20",
+        position <= 3 && !isDisqualified && "border-primary/20"
+      )}
+    >
+      {/* Position */}
+      <div
+        className={cn(
+          "flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg flex-shrink-0",
+          getMedalColor(position)
+        )}
+      >
+        {position <= 3 ? (
+          <Medal className="h-5 w-5" />
+        ) : (
+          position
+        )}
+      </div>
+
+      {/* Team info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className={cn("font-medium truncate", isDisqualified && "line-through")}>
+            {tym.nazev}
+          </p>
+          {isDisqualified && (
+            <span className="text-xs text-destructive font-medium">(DQ)</span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <span>Peg {tym.peg_cislo ?? "-"}</span>
+          <span className="flex items-center gap-1">
+            <Fish className="h-3 w-3" />
+            {pocetRyb}
+          </span>
+          {zluteKarty > 0 && (
+            <span className={cn(
+              "flex items-center gap-1",
+              zluteKarty >= 2 ? "text-destructive" : "text-amber-500"
+            )}>
+              <AlertTriangle className="h-3 w-3" />
+              {zluteKarty} ŽK
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Score */}
+      {weightsVisible && (
+        <div className="text-right flex-shrink-0">
+          {isDisqualified ? (
+            <span className="text-destructive font-mono text-lg">0.00</span>
+          ) : (
+            <AnimatedScore
+              value={skore}
+              decimals={2}
+              duration={1500}
+              delay={position * 100}
+              animationKey={`${entry.tym.id}-${skore}`}
+              className="font-mono text-lg font-semibold"
+            />
+          )}
+          <p className="text-xs text-muted-foreground">kg</p>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function LeaderboardRow({ entry, position, weightsVisible }: LeaderboardRowProps) {

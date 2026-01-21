@@ -9,10 +9,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { ErrorCodes, toErrorResponse } from '@/lib/errors'
+import { isSystemAdmin } from '@/lib/constants'
 import type { ActionResult } from '@/lib/types'
-
-// Hardcoded admin user ID
-const ADMIN_USER_ID = 'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25'
 
 interface ImportedMember {
   jmeno: string
@@ -41,8 +39,8 @@ async function checkZavodAdminAccess(zavodId: string): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // Hardcoded admin check
-  if (user.id === ADMIN_USER_ID) {
+  // Centralized system admin check
+  if (isSystemAdmin(user.id)) {
     return user.id
   }
 

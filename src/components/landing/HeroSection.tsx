@@ -116,11 +116,11 @@ export function HeroSection({
             {subtitle}
           </p>
 
-          {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Button 
-              asChild 
-              size="lg" 
+          {/* CTA buttons - Desktop */}
+          <div className="hidden sm:flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <Button
+              asChild
+              size="lg"
               className="text-lg px-8 py-6 hover-glow hover-scale bg-accent hover:bg-accent/90"
             >
               <Link href={ctaHref}>
@@ -128,16 +128,59 @@ export function HeroSection({
                 {ctaText}
               </Link>
             </Button>
-            <Button 
-              asChild 
-              variant="outline" 
-              size="lg" 
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
               className="text-lg px-8 py-6 hover-lift"
             >
               <Link href="#jak-to-funguje">
                 Jak to funguje
               </Link>
             </Button>
+          </div>
+
+          {/* Mobile CTA buttons - larger touch targets */}
+          <div className="sm:hidden flex flex-col gap-3 pt-6 w-full max-w-xs mx-auto">
+            <Button
+              asChild
+              size="lg"
+              className="w-full text-lg py-6 hover-glow bg-accent hover:bg-accent/90"
+            >
+              <Link href={ctaHref}>
+                <Trophy className="w-5 h-5 mr-2" />
+                {ctaText}
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="w-full text-lg py-6"
+            >
+              <Link href="/login">
+                <Users className="w-5 h-5 mr-2" />
+                Mám účet
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              size="lg"
+              className="w-full"
+            >
+              <Link href="#jak-to-funguje">
+                Jak to funguje
+              </Link>
+            </Button>
+          </div>
+
+          {/* Info box - jak se dostat do systému */}
+          <div className="sm:hidden mt-6 p-4 rounded-lg bg-muted/50 border border-border/50 text-left max-w-xs mx-auto">
+            <p className="text-sm text-muted-foreground">
+              <strong className="text-foreground">Jak se přihlásit?</strong><br />
+              Pořadatel vám pošle pozvánku emailem. Kliknutím na odkaz v emailu se automaticky přihlásíte do závodu.
+            </p>
           </div>
 
           {/* Stats preview */}

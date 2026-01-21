@@ -2,6 +2,21 @@
 // These values are configurable per competition but have sensible defaults
 
 /**
+ * System admin user IDs - centralized for security
+ * These users have full access to all features
+ */
+export const SYSTEM_ADMIN_IDS = [
+  'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25' // prorybolov@gmail.com
+] as const;
+
+/**
+ * Check if a user ID is a system admin
+ */
+export function isSystemAdmin(userId: string): boolean {
+  return SYSTEM_ADMIN_IDS.includes(userId as typeof SYSTEM_ADMIN_IDS[number]);
+}
+
+/**
  * Minimum weight of fish in kg to be counted for scoring
  * Requirement 3.2: Fish under 5kg are rejected
  */

@@ -14,6 +14,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
+import { isSystemAdmin } from '@/lib/constants'
 import { sendInvitationEmail } from '@/lib/email/resend'
 import type {
   ActionResult,
@@ -21,9 +22,6 @@ import type {
   CreatePozvankaInput,
   UserRole,
 } from '@/lib/types'
-
-// Hardcoded admin user ID (prorybolov@gmail.com)
-const ADMIN_USER_ID = 'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25'
 
 // Base URL for invitation links
 const getBaseUrl = () => {
@@ -45,8 +43,8 @@ async function checkZavodAdminAccess(zavodId: string): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // Hardcoded admin check first
-  if (user.id === ADMIN_USER_ID) {
+  // Centralized system admin check first
+  if (isSystemAdmin(user.id)) {
     return user.id
   }
 

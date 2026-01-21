@@ -20,7 +20,7 @@ export default function AuthLayout({
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/70 via-teal-900/60 to-green-900/70" />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-md p-8">
+      <div className="relative z-10 w-full max-w-md p-4 sm:p-8">
         {children}
       </div>
     </div>

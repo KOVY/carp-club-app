@@ -64,30 +64,35 @@ function LoginForm() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-8">
+    <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-8">
       {/* Header */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-6 sm:mb-8">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-          <svg 
-            className="w-8 h-8 text-blue-600" 
-            fill="none" 
-            stroke="currentColor" 
+          <svg
+            className="w-8 h-8 text-blue-600"
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
             />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">Carp Club ČR</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Přihlášení</h1>
         <p className="text-gray-600 mt-2">
-          {step === 'email' 
-            ? 'Přihlaste se pomocí emailu' 
+          {step === 'email'
+            ? 'Už máte účet? Zadejte svůj email pro přihlášení.'
             : 'Zadejte kód z emailu'}
         </p>
+        {step === 'email' && (
+          <p className="text-sm text-gray-500 mt-3">
+            Nový účet? Účet se vytváří automaticky přes pozvánku od pořadatele.
+          </p>
+        )}
       </div>
 
       {/* Error message */}
@@ -206,9 +211,12 @@ function LoginForm() {
       )}
 
       {/* Footer */}
-      <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+      <div className="mt-8 pt-6 border-t border-gray-200 text-center space-y-2">
         <p className="text-sm text-gray-500">
-          Nemáte účet? Kontaktujte pořadatele závodu.
+          Přihlášení je pouze pro uživatele, kteří již byli pozváni do závodu.
+        </p>
+        <p className="text-sm text-gray-500">
+          Ztratili jste pozvánku? Požádejte pořadatele o nové odeslání.
         </p>
       </div>
     </div>
@@ -217,7 +225,7 @@ function LoginForm() {
 
 function LoginFormSkeleton() {
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-8">
+    <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-8">
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4 animate-pulse" />
         <div className="h-8 bg-gray-200 rounded w-48 mx-auto mb-2 animate-pulse" />

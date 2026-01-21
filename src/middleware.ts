@@ -193,11 +193,11 @@ async function checkHlavniAdminAccess(
   supabase: ReturnType<typeof createServerClient<Database>>,
   userId: string
 ): Promise<boolean> {
-  // Hardcoded admin user ID as fallback (prorybolov@gmail.com)
-  const ADMIN_USER_ID = 'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25'
+  // Import centralized admin check
+  const { isSystemAdmin } = await import('@/lib/constants')
 
-  if (userId === ADMIN_USER_ID) {
-    console.log('[Middleware] User is hardcoded admin, granting access')
+  if (isSystemAdmin(userId)) {
+    console.log('[Middleware] User is system admin, granting access')
     return true
   }
 

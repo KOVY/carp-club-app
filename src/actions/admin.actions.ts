@@ -20,9 +20,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
-
-// Hardcoded admin user ID (prorybolov@gmail.com)
-const ADMIN_USER_ID = 'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25'
+import { isSystemAdmin } from '@/lib/constants'
 import { canManageZavod, canIssueYellowCard } from '@/lib/permissions'
 import type { 
   ActionResult, 
@@ -208,9 +206,9 @@ export async function updateZavod(
       }
     }
 
-    // Check hardcoded admin first
+    // Check system admin first
     let hasAccess = false
-    if (user.id === ADMIN_USER_ID) {
+    if (isSystemAdmin(user.id)) {
       hasAccess = true
     }
 
@@ -976,9 +974,9 @@ export async function createTym(input: CreateTymInput): Promise<ActionResult<{ t
     }
 
     // Check if user is system admin first
-    const isSystemAdmin = user.id === ADMIN_USER_ID
+    const isSysAdmin = isSystemAdmin(user.id)
 
-    if (!isSystemAdmin) {
+    if (!isSysAdmin) {
       // Check system_admins table
       const { data: sysAdmin } = await supabase
         .from('system_admins')

@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher"
 import { createClient } from "@/lib/supabase/client"
+import { isSystemAdmin } from "@/lib/constants"
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -47,9 +48,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const checkAccess = async () => {
       const supabase = createClient()
 
-      // Hardcoded admin user ID as fallback (prorybolov@gmail.com)
-      const ADMIN_USER_ID = 'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25'
-
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
       console.log('[AdminLayout] Auth check:', { authUser: authUser?.id, authError: authError?.message })
 
@@ -68,9 +66,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       let isHlavniAdmin = false
 
-      // Hardcoded admin check first
-      if (authUser.id === ADMIN_USER_ID) {
-        console.log('[AdminLayout] User is hardcoded admin!')
+      // Centralized system admin check first
+      if (isSystemAdmin(authUser.id)) {
+        console.log('[AdminLayout] User is system admin!')
         isHlavniAdmin = true
       } else {
         // First check system_admins table (global admin)

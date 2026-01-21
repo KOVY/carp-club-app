@@ -68,19 +68,20 @@ export function BottomNavigation({
           href: `/zavod/${zavodId}/ulovky`,
           isHighlighted: true,
         },
-        // "Potvrzení" - vždy viditelné (stránka sama ověří přihlášení)
+        // "Potvrzení" - pro závodníky a kapitány přesměruje na novou stránku
+        // rozhodčí a pořadatelé mají přístup na /admin
         {
           icon: CheckCircle,
           label: "Potvrzení",
-          href: `/zavod/${zavodId}/admin`,
+          href: `/zavod/${zavodId}/potvrzeni`,
           badge: pendingCount > 0 ? pendingCount : undefined,
+          roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
         },
-        // Galerie only for viewers (divak)
+        // Galerie pro všechny
         {
           icon: ImageIcon,
           label: "Galerie",
           href: `/zavod/${zavodId}/galerie`,
-          roles: ['divak'],
         },
         {
           icon: User,
@@ -120,7 +121,7 @@ export function BottomNavigation({
       },
       {
         icon: User,
-        label: isAuthenticated ? "Účet" : "Přihlásit",
+        label: isAuthenticated ? "Účet" : "Mám účet",
         href: isAuthenticated ? "/profil" : "/login",
       },
     ]

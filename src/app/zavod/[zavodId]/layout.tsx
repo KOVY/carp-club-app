@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   Fish,
   Trophy,
@@ -23,10 +23,12 @@ import { Button } from "@/components/ui/button"
 import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher"
 import { BottomNavigationWrapper } from "@/components/layout/BottomNavigationWrapper"
 import { MobileMenu } from "@/components/layout/MobileMenu"
+import { SwipeableContainer } from "@/components/common/SwipeableContainer"
 import { AuthCallbackHandler } from "@/components/auth"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { usePendingConfirmations } from "@/hooks/usePendingConfirmations"
+import { getAdjacentPages } from "@/lib/navigation-order"
 import type { Zavod, UserRole } from "@/lib/types"
 
 interface ZavodLayoutProps {
@@ -55,6 +57,23 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+
+  // Get adjacent pages for swipe navigation
+  const adjacentPages = zavodId ? getAdjacentPages(pathname, zavodId) : { prev: null, next: null }
+
+  // Swipe navigation handlers
+  const handleSwipeLeft = () => {
+    if (adjacentPages.next) {
+      router.push(adjacentPages.next)
+    }
+  }
+
+  const handleSwipeRight = () => {
+    if (adjacentPages.prev) {
+      router.push(adjacentPages.prev)
+    }
+  }
 
   // Get pending confirmations count
   const { count: pendingCount } = usePendingConfirmations({
@@ -258,6 +277,11 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
                 >
                   {item.icon}
                   {item.label}
+                  {item.label === "Potvrzení" && pendingCount > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs bg-destructive text-white rounded-full min-w-[1.25rem] text-center">
+                      {pendingCount}
+                    </span>
+                  )}
                 </Button>
               </Link>
             ))}
@@ -291,10 +315,18 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
         pendingCount={pendingCount}
       />
 
-      {/* Main content */}
-      <main className="container py-6">
-        {children}
-      </main>
+      {/* Main content with swipe navigation */}
+      <SwipeableContainer
+        onSwipeLeft={handleSwipeLeft}
+        onSwipeRight={handleSwipeRight}
+        threshold={75}
+        showIndicator
+        className="flex-1"
+      >
+        <main className="container py-6">
+          {children}
+        </main>
+      </SwipeableContainer>
 
       {/* Bottom Navigation for Mobile */}
       <BottomNavigationWrapper zavodId={zavodId} userRole={userRole} />

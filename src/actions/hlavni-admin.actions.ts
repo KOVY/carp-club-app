@@ -16,6 +16,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
+import { isSystemAdmin } from '@/lib/constants'
 import type {
   ActionResult,
   CreateZavodInput,
@@ -26,12 +27,9 @@ import type {
 
 /**
  * Kontrola, zda je uživatel hlavní admin nebo pořadatel
- * Nejprve kontroluje hardcoded admin, pak system_admins tabulku
+ * Nejprve kontroluje centralizovaný admin list, pak system_admins tabulku
  */
 async function checkAdminAccess(): Promise<{ userId: string; isHlavniAdmin: boolean } | null> {
-  // Hardcoded admin user ID as fallback (prorybolov@gmail.com)
-  const ADMIN_USER_ID = 'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25'
-
   const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -39,8 +37,8 @@ async function checkAdminAccess(): Promise<{ userId: string; isHlavniAdmin: bool
     return null
   }
 
-  // Hardcoded admin check first
-  if (user.id === ADMIN_USER_ID) {
+  // Centralized system admin check first
+  if (isSystemAdmin(user.id)) {
     return { userId: user.id, isHlavniAdmin: true }
   }
 
