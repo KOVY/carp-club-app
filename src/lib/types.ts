@@ -150,6 +150,7 @@ export interface ZlutaKartaInput {
   tymId: string;
   zavodId: string;
   duvod: string;
+  stopkaHodin?: number | null; // délka stopky v hodinách (3 nebo 6), null = bez stopky
 }
 
 export interface CreateUserInput {

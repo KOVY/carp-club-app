@@ -6,10 +6,12 @@ import { Fish, RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { UlovekForm, PotvrzeniList, TymoveUlovkyList } from "@/components/zavod"
+import { StopkaCountdown } from "@/components/zavod/StopkaCountdown"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
 import { ErrorState } from "@/components/common/ErrorState"
 import { StatusMessage } from "@/components/common/StatusMessage"
 import { getUlovkyKPotvrzeni, getUserRoleInZavod, getUlovkyTymu } from "@/actions/ulovky.actions"
+import { getActiveStopka } from "@/actions/admin.actions"
 import { createClient } from "@/lib/supabase/client"
 import type { UlovekWithRelations, UserRole } from "@/lib/types"
 
@@ -27,10 +29,12 @@ export default function UlovkyPage() {
   const [pendingUlovky, setPendingUlovky] = useState<UlovekWithRelations[]>([])
   const [teamUlovky, setTeamUlovky] = useState<UlovekWithRelations[]>([])
   const [userRole, setUserRole] = useState<UserRole | null>(null)
+  const [userTymId, setUserTymId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [zavodActive, setZavodActive] = useState(false)
+  const [stopkaDo, setStopkaDo] = useState<string | null>(null)
 
   const fetchData = useCallback(async () => {
     try {
@@ -85,9 +89,15 @@ export default function UlovkyPage() {
       const roleResult = await getUserRoleInZavod(zavodId)
       console.log('fetchData: role result:', roleResult)
 
-      if (roleResult.success && roleResult.data?.role) {
-        setUserRole(roleResult.data.role)
-        console.log('fetchData: set userRole to', roleResult.data.role)
+      if (roleResult.success && roleResult.data) {
+        if (roleResult.data.role) {
+          setUserRole(roleResult.data.role)
+          console.log('fetchData: set userRole to', roleResult.data.role)
+        }
+        if (roleResult.data.tymId) {
+          setUserTymId(roleResult.data.tymId)
+          console.log('fetchData: set userTymId to', roleResult.data.tymId)
+        }
       }
 
       // Fetch pending catches for confirmation and team catches in parallel
@@ -105,6 +115,19 @@ export default function UlovkyPage() {
       console.log('fetchData: team catches result:', teamResult.success)
       if (teamResult.success && teamResult.data) {
         setTeamUlovky(teamResult.data.ulovky)
+      }
+
+      // Check if team has an active stopka (penalty timeout)
+      const tymId = roleResult.success && roleResult.data?.tymId ? roleResult.data.tymId : null
+      if (tymId) {
+        const stopkaResult = await getActiveStopka(tymId, zavodId)
+        if (stopkaResult.success && stopkaResult.data?.stopkaDo) {
+          setStopkaDo(stopkaResult.data.stopkaDo)
+        } else {
+          setStopkaDo(null)
+        }
+      } else {
+        setStopkaDo(null)
       }
 
       setError(null)
@@ -156,6 +179,15 @@ export default function UlovkyPage() {
   const canSubmitCatch = userRole === 'zavodnik' || userRole === 'kapitan' || userRole === 'rozhodci' || userRole === 'poradatel'
   // Pouze kapitáni, rozhodčí a pořadatelé mohou potvrzovat úlovky sousedních týmů
   const canConfirmCatch = userRole === 'kapitan' || userRole === 'rozhodci' || userRole === 'poradatel'
+
+  // Check if stopka is currently active
+  const hasActiveStopka = Boolean(stopkaDo && new Date(stopkaDo).getTime() > Date.now())
+
+  // Handle stopka expiration
+  const handleStopkaExpired = () => {
+    setStopkaDo(null)
+    fetchData() // Refresh to update UI
+  }
 
   if (isLoading) {
     return (
@@ -214,6 +246,14 @@ export default function UlovkyPage() {
         />
       )}
 
+      {/* Warning if team has active stopka */}
+      {hasActiveStopka && stopkaDo && (
+        <StopkaCountdown
+          stopkaDo={stopkaDo}
+          onExpired={handleStopkaExpired}
+        />
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Submit catch form */}
         {canSubmitCatch && (
@@ -221,7 +261,7 @@ export default function UlovkyPage() {
             <UlovekForm
               zavodId={zavodId}
               onSuccess={handleUlovekSubmitted}
-              disabled={!zavodActive}
+              disabled={!zavodActive || hasActiveStopka}
             />
           </div>
         )}

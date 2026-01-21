@@ -76,7 +76,7 @@ export default function TymDetailPage({ params }: PageProps) {
 
   // Edit mode state
   const [isEditing, setIsEditing] = useState(false)
-  const [editData, setEditData] = useState({ nazev: "", barva: "", zaplaceno: false })
+  const [editData, setEditData] = useState({ nazev: "", barva: "", zaplaceno: false, peg_cislo: null as number | null })
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -121,6 +121,7 @@ export default function TymDetailPage({ params }: PageProps) {
         nazev: tymResult.data.nazev,
         barva: tymResult.data.barva,
         zaplaceno: tymResult.data.zaplaceno,
+        peg_cislo: tymResult.data.peg_cislo ?? null,
       })
     } else {
       setError(tymResult.error?.message || 'Nepodařilo se načíst tým')
@@ -145,6 +146,7 @@ export default function TymDetailPage({ params }: PageProps) {
       nazev: editData.nazev,
       barva: editData.barva,
       zaplaceno: editData.zaplaceno,
+      peg_cislo: editData.peg_cislo,
     })
 
     if (result.success && result.data) {
@@ -328,6 +330,23 @@ export default function TymDetailPage({ params }: PageProps) {
             <CardTitle>Upravit tým</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="peg_cislo">Číslo pegu</Label>
+              <Input
+                id="peg_cislo"
+                type="number"
+                min="1"
+                placeholder="např. 1, 2, 3..."
+                value={editData.peg_cislo ?? ""}
+                onChange={(e) => setEditData({
+                  ...editData,
+                  peg_cislo: e.target.value ? parseInt(e.target.value, 10) : null
+                })}
+                className="max-w-32"
+              />
+              <p className="text-sm text-muted-foreground">Pozice týmu na břehu (musí být unikátní)</p>
+            </div>
+
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Zaplaceno</Label>

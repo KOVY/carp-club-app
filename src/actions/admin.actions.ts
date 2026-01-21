@@ -583,7 +583,7 @@ export async function losujPegy(zavodId: string): Promise<ActionResult<{ assigne
  * Requirement 7.2: Only rozhodci/poradatel can issue yellow cards
  * Requirement 7.3: Database trigger automatically zeros score on 2nd yellow card
  */
-export async function udelitZlutouKartu(input: ZlutaKartaInput): Promise<ActionResult<{ zlutaKartaId: string; cardCount: number }>> {
+export async function udelitZlutouKartu(input: ZlutaKartaInput): Promise<ActionResult<{ zlutaKartaId: string; cardCount: number; stopkaDo: string | null }>> {
   try {
     const supabase = await createClient()
     
@@ -676,19 +676,28 @@ export async function udelitZlutouKartu(input: ZlutaKartaInput): Promise<ActionR
       }
     }
 
+    // Calculate stopka_do if stopkaHodin is provided
+    let stopkaDo: string | null = null
+    if (input.stopkaHodin && input.stopkaHodin > 0) {
+      const stopkaDate = new Date()
+      stopkaDate.setHours(stopkaDate.getHours() + input.stopkaHodin)
+      stopkaDo = stopkaDate.toISOString()
+    }
+
     // Insert yellow card (trigger will handle disqualification on 2nd card)
     const insertData = {
       tym_id: tymId,
       zavod_id: zavodId,
       udelil_user_id: user.id,
       duvod: duvod.trim(),
+      stopka_do: stopkaDo,
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: zlutaKarta, error: insertError } = await (supabase
       .from('zlute_karty') as any)
       .insert(insertData)
-      .select('id')
+      .select('id, stopka_do')
       .single()
 
     if (insertError || !zlutaKarta) {
@@ -710,12 +719,75 @@ export async function udelitZlutouKartu(input: ZlutaKartaInput): Promise<ActionR
       .eq('zavod_id', zavodId)
 
     const cardCount = countError ? 1 : (cardCountData?.length || 1)
+    const zlutaKartaData = zlutaKarta as { id: string; stopka_do: string | null }
 
     return {
       success: true,
       data: {
-        zlutaKartaId: (zlutaKarta as { id: string }).id,
+        zlutaKartaId: zlutaKartaData.id,
         cardCount,
+        stopkaDo: zlutaKartaData.stopka_do,
+      },
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
+
+
+/**
+ * Get active stopka for a team
+ * Returns the stopka_do timestamp if team has an active penalty timeout
+ */
+export async function getActiveStopka(
+  tymId: string,
+  zavodId: string
+): Promise<ActionResult<{ stopkaDo: string | null; zlutaKartaId: string | null }>> {
+  try {
+    const supabase = await createClient()
+
+    // Get the most recent yellow card with active stopka for this team
+    const now = new Date().toISOString()
+    const { data, error } = await supabase
+      .from('zlute_karty')
+      .select('id, stopka_do')
+      .eq('tym_id', tymId)
+      .eq('zavod_id', zavodId)
+      .not('stopka_do', 'is', null)
+      .gt('stopka_do', now)
+      .order('stopka_do', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: error.message,
+        },
+      }
+    }
+
+    if (data) {
+      const stopkaData = data as { id: string; stopka_do: string | null }
+      return {
+        success: true,
+        data: {
+          stopkaDo: stopkaData.stopka_do,
+          zlutaKartaId: stopkaData.id,
+        },
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        stopkaDo: null,
+        zlutaKartaId: null,
       },
     }
   } catch (error) {
@@ -729,7 +801,7 @@ export async function udelitZlutouKartu(input: ZlutaKartaInput): Promise<ActionR
 
 /**
  * Set embargo time for a competition
- * 
+ *
  * Requirement 6.1: Set embargo_od time
  * Only poradatel can set embargo
  */

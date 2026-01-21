@@ -658,15 +658,15 @@ export async function confirmUlovekAdmin(ulovekId: string): Promise<ActionResult
       }
     }
 
-    // Also insert a confirmation record for audit
+    // Log admin confirmation to audit log (don't insert to potvrzeni - admin has no team)
     await (adminClient
-      .from('potvrzeni') as any)
+      .from('audit_log') as any)
       .insert({
-        ulovek_id: ulovekId,
-        potvrdil_user_id: access.userId,
-        potvrdil_tym_id: null,
-        potvrzeno: true,
-        poznamka: 'Potvrzeno administrátorem',
+        table_name: 'ulovky',
+        record_id: ulovekId,
+        action: 'ADMIN_CONFIRM',
+        new_data: { stav: 'potvrzeno', potvrzeno_rozhodcim: true },
+        user_id: access.userId,
       })
 
     return { success: true }
@@ -715,15 +715,15 @@ export async function rejectUlovekAdmin(ulovekId: string, reason?: string): Prom
       }
     }
 
-    // Insert rejection record for audit
+    // Log admin rejection to audit log (don't insert to potvrzeni - admin has no team)
     await (adminClient
-      .from('potvrzeni') as any)
+      .from('audit_log') as any)
       .insert({
-        ulovek_id: ulovekId,
-        potvrdil_user_id: access.userId,
-        potvrdil_tym_id: null,
-        potvrzeno: false,
-        poznamka: reason || 'Zamítnuto administrátorem',
+        table_name: 'ulovky',
+        record_id: ulovekId,
+        action: 'ADMIN_REJECT',
+        new_data: { stav: 'zamitnuto', reason: reason || 'Zamítnuto administrátorem' },
+        user_id: access.userId,
       })
 
     return { success: true }

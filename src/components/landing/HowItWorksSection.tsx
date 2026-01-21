@@ -1,10 +1,11 @@
 'use client'
 
 import { useRef } from 'react'
-import { 
-  UserPlus, 
-  Fish, 
-  CheckCircle, 
+import Image from 'next/image'
+import {
+  UserPlus,
+  Fish,
+  CheckCircle,
   Trophy,
   ArrowRight
 } from 'lucide-react'
@@ -91,11 +92,22 @@ export function HowItWorksSection() {
   const isVisible = useScrollAnimation(sectionRef, { threshold: 0.1 })
 
   return (
-    <section 
+    <section
       ref={sectionRef}
       id="jak-to-funguje"
-      className="py-20 md:py-32 relative scroll-mt-20"
+      className="py-20 md:py-32 relative scroll-mt-20 overflow-hidden"
     >
+      {/* Background competition image */}
+      <div className="absolute inset-0 -z-10">
+        <Image
+          src="/images/competition-atmosphere.png"
+          alt="Závodní atmosféra"
+          fill
+          className="object-cover opacity-10"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
+      </div>
+
       <div className="container mx-auto px-4">
         {/* Section header */}
         <div 

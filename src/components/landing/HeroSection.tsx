@@ -46,7 +46,7 @@ export function HeroSection({
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1504472478235-9bc48ba4d60f?w=1920&q=80')`,
+          backgroundImage: `url('/images/hero-banner.png')`,
           transform: `translateY(${parallaxOffset}px) scale(1.1)`,
         }}
       />

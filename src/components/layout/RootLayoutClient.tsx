@@ -16,6 +16,7 @@ export function RootLayoutClient({ children }: RootLayoutClientProps) {
   const isAdminPage = pathname?.startsWith('/admin')
   const isZavodPage = pathname?.startsWith('/zavod/')
   const isPozvankaPage = pathname?.startsWith('/pozvanka/')
+  const isLandingPage = pathname === '/'
 
   // Admin and Zavod pages have their own custom layouts
   if (isAdminPage || isZavodPage || isPozvankaPage) {
@@ -23,9 +24,13 @@ export function RootLayoutClient({ children }: RootLayoutClientProps) {
   }
 
   // For public pages (landing, archiv), render the full layout
+  // On landing page, hide header on mobile to avoid duplicate navigation (BottomNav has login)
   return (
     <>
-      <HeaderWrapper />
+      {/* Header: hidden on mobile for landing page (has HeroSection + BottomNav) */}
+      <div className={isLandingPage ? 'hidden md:block' : ''}>
+        <HeaderWrapper />
+      </div>
       <main className="flex-1 pb-16 md:pb-0">
         {children}
       </main>

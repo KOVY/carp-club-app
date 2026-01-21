@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useParams } from "next/navigation"
 import Image from "next/image"
-import { Camera, Filter, RefreshCw, Fish, X } from "lucide-react"
+import { Camera, Filter, RefreshCw, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/GlassCard"
@@ -267,16 +267,26 @@ export default function GaleriePage() {
       {/* Gallery grid */}
       {filteredUlovky.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <div className="relative w-48 h-48 mx-auto mb-6 rounded-lg overflow-hidden opacity-70">
+            <Image
+              src="/images/empty-gallery.png"
+              alt="Rybářské vybavení"
+              fill
+              className="object-cover"
+            />
+          </div>
           {hasActiveFilters ? (
             <>
-              <p>Žádné úlovky neodpovídají zvoleným filtrům</p>
+              <p className="text-lg font-medium">Žádné úlovky neodpovídají zvoleným filtrům</p>
               <Button variant="link" onClick={clearFilters} className="mt-2">
                 Zrušit filtry
               </Button>
             </>
           ) : (
-            <p>Zatím nejsou žádné potvrzené úlovky</p>
+            <>
+              <p className="text-lg font-medium">Zatím nejsou žádné potvrzené úlovky</p>
+              <p className="text-sm mt-1">Úlovky se zde objeví po potvrzení sousedními pegy</p>
+            </>
           )}
         </div>
       ) : (

@@ -6,6 +6,7 @@ export { PotvrzeniList } from './PotvrzeniList'
 export { LeaderboardTable, CompactLeaderboard } from './LeaderboardTable'
 export { NejvetsiRybaCard, CompactBiggestFish } from './NejvetsiRybaCard'
 export { ZlutaKartaDialog, YellowCardBadge } from './ZlutaKartaDialog'
+export { StopkaCountdown, useActiveStopka } from './StopkaCountdown'
 export {
   DemoLoginPromptProvider,
   useDemoLoginPrompt,

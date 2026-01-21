@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, Loader2 } from "lucide-react"
+import { AlertTriangle, Loader2, Clock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { udelitZlutouKartu } from "@/actions/admin.actions"
 import type { TymWithRelations } from "@/lib/types"
@@ -45,6 +52,7 @@ export function ZlutaKartaDialog({
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [duvod, setDuvod] = useState("")
+  const [stopkaHodin, setStopkaHodin] = useState<string>("0") // "0" = bez stopky, "3" = 3 hodiny, "6" = 6 hodin
   const { toast } = useToast()
 
   const willBeDisqualified = currentYellowCards >= 1
@@ -64,25 +72,36 @@ export function ZlutaKartaDialog({
     setIsSubmitting(true)
 
     try {
+      const stopkaValue = parseInt(stopkaHodin, 10)
       const result = await udelitZlutouKartu({
         tymId: tym.id,
         zavodId,
         duvod: duvod.trim(),
+        stopkaHodin: stopkaValue > 0 ? stopkaValue : null,
       })
 
       if (result.success) {
         const cardCount = result.data?.cardCount || currentYellowCards + 1
-        
+        const hasStopka = result.data?.stopkaDo !== null
+
+        let description = ""
+        if (cardCount >= 2) {
+          description = `Tým ${tym.nazev} byl diskvalifikován (2. žlutá karta)`
+        } else if (hasStopka) {
+          description = `Tým ${tym.nazev} obdržel ${cardCount}. žlutou kartu se stopkou na ${stopkaHodin} hodin`
+        } else {
+          description = `Tým ${tym.nazev} obdržel ${cardCount}. žlutou kartu`
+        }
+
         toast({
           title: "Žlutá karta udělena",
-          description: cardCount >= 2
-            ? `Tým ${tym.nazev} byl diskvalifikován (2. žlutá karta)`
-            : `Tým ${tym.nazev} obdržel ${cardCount}. žlutou kartu`,
+          description,
           variant: cardCount >= 2 ? "destructive" : "default",
         })
 
         setOpen(false)
         setDuvod("")
+        setStopkaHodin("0")
         onSuccess?.()
       } else {
         toast({
@@ -107,6 +126,7 @@ export function ZlutaKartaDialog({
       setOpen(newOpen)
       if (!newOpen) {
         setDuvod("")
+        setStopkaHodin("0")
       }
     }
   }
@@ -176,6 +196,31 @@ export function ZlutaKartaDialog({
               />
               <p className="text-xs text-muted-foreground">
                 Důvod bude zaznamenán v audit logu a nelze jej později změnit
+              </p>
+            </div>
+
+            {/* Stopka selection */}
+            <div className="space-y-2">
+              <Label htmlFor="stopka" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Stopka (zákaz chytání)
+              </Label>
+              <Select
+                value={stopkaHodin}
+                onValueChange={setStopkaHodin}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger id="stopka">
+                  <SelectValue placeholder="Vyberte délku stopky" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Bez stopky</SelectItem>
+                  <SelectItem value="3">3 hodiny</SelectItem>
+                  <SelectItem value="6">6 hodin</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Během stopky tým nesmí zadávat nové úlovky
               </p>
             </div>
           </div>

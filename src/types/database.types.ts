@@ -279,6 +279,7 @@ export interface Database {
           poznamka: string | null
           cas: string
           created_at: string
+          stopka_do: string | null
         }
         Insert: {
           id?: string
@@ -289,6 +290,7 @@ export interface Database {
           poznamka?: string | null
           cas?: string
           created_at?: string
+          stopka_do?: string | null
         }
         Update: {
           id?: string
@@ -299,6 +301,7 @@ export interface Database {
           poznamka?: string | null
           cas?: string
           created_at?: string
+          stopka_do?: string | null
         }
       }
       zlute_karty_poznamky: {

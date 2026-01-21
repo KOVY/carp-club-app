@@ -12,7 +12,7 @@ export default function AuthLayout({
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1516747773440-e1c3e8e15a2b?w=1920&q=80')`,
+          backgroundImage: `url('/images/login-background.png')`,
         }}
       />
 
