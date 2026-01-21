@@ -170,6 +170,8 @@ export default function TymDetailPage({ params }: PageProps) {
   }
 
   const handleAddMember = async () => {
+    console.log('handleAddMember called with:', newMember)
+
     if (!newMember.jmeno.trim() || !newMember.email.trim()) {
       setError('Jméno a email jsou povinné')
       return
@@ -178,22 +180,41 @@ export default function TymDetailPage({ params }: PageProps) {
     setIsAddingMember(true)
     setError(null)
 
-    const result = await createPozvanka({
-      zavodId,
-      tymId,
-      jmeno: newMember.jmeno.trim(),
-      email: newMember.email.trim(),
-      telefon: newMember.telefon.trim() || undefined,
-      role: newMember.role,
-    })
+    try {
+      console.log('Calling createPozvanka with:', {
+        zavodId,
+        tymId,
+        jmeno: newMember.jmeno.trim(),
+        email: newMember.email.trim(),
+        telefon: newMember.telefon.trim() || undefined,
+        role: newMember.role,
+      })
 
-    if (result.success) {
-      setShowAddMember(false)
-      setNewMember({ jmeno: "", email: "", telefon: "", role: "zavodnik" })
-      fetchData()
-    } else {
-      setError(result.error?.message || 'Nepodařilo se přidat člena')
+      const result = await createPozvanka({
+        zavodId,
+        tymId,
+        jmeno: newMember.jmeno.trim(),
+        email: newMember.email.trim(),
+        telefon: newMember.telefon.trim() || undefined,
+        role: newMember.role,
+      })
+
+      console.log('createPozvanka result:', result)
+
+      if (result.success) {
+        setShowAddMember(false)
+        setNewMember({ jmeno: "", email: "", telefon: "", role: "zavodnik" })
+        fetchData()
+      } else {
+        const errorMsg = result.error?.message || 'Nepodařilo se přidat člena'
+        console.error('createPozvanka error:', result.error)
+        setError(errorMsg)
+      }
+    } catch (err) {
+      console.error('handleAddMember exception:', err)
+      setError(`Neočekávaná chyba: ${err instanceof Error ? err.message : 'Unknown'}`)
     }
+
     setIsAddingMember(false)
   }
 
@@ -498,7 +519,7 @@ export default function TymDetailPage({ params }: PageProps) {
                   <Button variant="outline" onClick={() => setShowAddMember(false)}>
                     Zrušit
                   </Button>
-                  <Button onClick={handleAddMember} disabled={isAddingMember}>
+                  <Button type="button" onClick={handleAddMember} disabled={isAddingMember}>
                     {isAddingMember ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-1 animate-spin" />
