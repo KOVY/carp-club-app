@@ -271,7 +271,7 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
     }
 
     // 1. Vytvořit nebo najít uživatele
-    let targetUserId: string
+    let targetUserId: string = ''
 
     // Nejprve zkusit vytvořit uživatele
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
@@ -348,6 +348,17 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
           code: 'USER_CREATION_FAILED',
           message: 'Nepodařilo se vytvořit uživatelský účet',
           details: { originalError: createError?.message },
+        },
+      }
+    }
+
+    // Kontrola že máme userId
+    if (!targetUserId) {
+      return {
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'Nepodařilo se najít nebo vytvořit uživatele',
         },
       }
     }
