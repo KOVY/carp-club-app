@@ -217,18 +217,28 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
     return <div className="flex items-center justify-center min-h-screen">Načítání...</div>
   }
 
-  const navItems: NavItem[] = [
+  // Navigace pro VEŘEJNOST (nepřihlášení)
+  const publicNavItems: NavItem[] = [
     { href: `/zavod/${zavodId}`, label: "Přehled", icon: <Fish className="h-4 w-4" /> },
-    // Přidat úlovek - vždy viditelné (stránka sama ověří přihlášení a roli)
-    { href: `/zavod/${zavodId}/ulovky`, label: "Přidat úlovek", icon: <Fish className="h-4 w-4" /> },
     { href: `/zavod/${zavodId}/leaderboard`, label: "Pořadí", icon: <Trophy className="h-4 w-4" /> },
-    // Potvrzení - vždy viditelné (stránka sama ověří přihlášení)
-    { href: `/zavod/${zavodId}/admin`, label: "Potvrzení", icon: <CheckCircle className="h-4 w-4" /> },
+    { href: `/zavod/${zavodId}/galerie`, label: "Galerie", icon: <ImageIcon className="h-4 w-4" /> },
+    { href: `/zavod/${zavodId}/pravidla`, label: "Pravidla", icon: <FileText className="h-4 w-4" /> },
+  ]
+
+  // Navigace pro PŘIHLÁŠENÉ (závodníci, rozhodčí, pořadatel)
+  const authNavItems: NavItem[] = [
+    { href: `/zavod/${zavodId}`, label: "Přehled", icon: <Fish className="h-4 w-4" /> },
+    { href: `/zavod/${zavodId}/ulovky`, label: "Přidat úlovek", icon: <Fish className="h-4 w-4" />, roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'] },
+    { href: `/zavod/${zavodId}/leaderboard`, label: "Pořadí", icon: <Trophy className="h-4 w-4" /> },
+    { href: `/zavod/${zavodId}/potvrzeni`, label: "Potvrzení", icon: <CheckCircle className="h-4 w-4" />, roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'] },
     { href: `/zavod/${zavodId}/galerie`, label: "Galerie", icon: <ImageIcon className="h-4 w-4" /> },
     { href: `/zavod/${zavodId}/pravidla`, label: "Pravidla", icon: <FileText className="h-4 w-4" /> },
     { href: `/zavod/${zavodId}/admin`, label: "Rozhodčí panel", icon: <Users className="h-4 w-4" />, roles: ['rozhodci', 'poradatel'] },
     { href: `/zavod/${zavodId}/admin/nastaveni`, label: "Nastavení", icon: <Settings className="h-4 w-4" />, roles: ['poradatel'] },
   ]
+
+  // Vybrat navigaci podle přihlášení
+  const navItems = user ? authNavItems : publicNavItems
 
   // Filter nav items based on user role
   const filteredNavItems = navItems.filter(item => {
