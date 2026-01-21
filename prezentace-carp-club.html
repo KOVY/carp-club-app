@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carp Club - Prezentace pro závodníky</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a2e;
+      color: white;
+    }
+
+    .slide {
+      width: 100%;
+      min-height: 100vh;
+      padding: 60px 80px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(13, 148, 136, 0.3) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .slide-1 {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 120px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 72px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #0d9488, #14b8a6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 20px;
+    }
+
+    .subtitle {
+      font-size: 32px;
+      color: #94a3b8;
+      margin-bottom: 40px;
+    }
+
+    .tagline {
+      font-size: 24px;
+      color: #64748b;
+      font-style: italic;
+    }
+
+    h2 {
+      font-size: 48px;
+      color: #14b8a6;
+      margin-bottom: 50px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 40px;
+      margin-top: 20px;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 30px;
+      transition: transform 0.3s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .feature-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+
+    .feature-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 10px;
+    }
+
+    .feature-desc {
+      font-size: 18px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .steps-list {
+      list-style: none;
+      counter-reset: step;
+    }
+
+    .steps-list li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 30px;
+      font-size: 24px;
+      color: #e2e8f0;
+    }
+
+    .steps-list li::before {
+      content: counter(step);
+      background: linear-gradient(135deg, #0d9488, #14b8a6);
+      color: white;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 24px;
+      margin-right: 25px;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      padding-top: 10px;
+    }
+
+    .step-title {
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 5px;
+    }
+
+    .step-desc {
+      color: #94a3b8;
+      font-size: 20px;
+    }
+
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+
+    .benefit-card {
+      text-align: center;
+      padding: 30px 20px;
+      background: rgba(13, 148, 136, 0.1);
+      border-radius: 20px;
+      border: 1px solid rgba(13, 148, 136, 0.3);
+    }
+
+    .benefit-icon {
+      font-size: 56px;
+      margin-bottom: 15px;
+    }
+
+    .benefit-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #14b8a6;
+      margin-bottom: 10px;
+    }
+
+    .benefit-desc {
+      font-size: 16px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .future-timeline {
+      position: relative;
+      padding-left: 40px;
+    }
+
+    .future-timeline::before {
+      content: '';
+      position: absolute;
+      left: 15px;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(to bottom, #0d9488, #14b8a6, #2dd4bf);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 35px;
+      padding-left: 30px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -31px;
+      top: 8px;
+      width: 16px;
+      height: 16px;
+      background: #14b8a6;
+      border-radius: 50%;
+      border: 3px solid #1a1a2e;
+    }
+
+    .timeline-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 8px;
+    }
+
+    .timeline-desc {
+      font-size: 18px;
+      color: #94a3b8;
+    }
+
+    .cta-slide {
+      text-align: center;
+      align-items: center;
+    }
+
+    .cta-box {
+      background: linear-gradient(135deg, rgba(13, 148, 136, 0.2), rgba(20, 184, 166, 0.1));
+      border: 2px solid #14b8a6;
+      border-radius: 30px;
+      padding: 50px 80px;
+      margin-top: 40px;
+    }
+
+    .cta-title {
+      font-size: 36px;
+      color: #14b8a6;
+      margin-bottom: 20px;
+    }
+
+    .cta-url {
+      font-size: 48px;
+      font-weight: 700;
+      color: white;
+      text-decoration: none;
+    }
+
+    .cta-note {
+      margin-top: 30px;
+      font-size: 20px;
+      color: #64748b;
+    }
+
+    .slide-number {
+      position: absolute;
+      bottom: 30px;
+      right: 40px;
+      font-size: 18px;
+      color: #475569;
+    }
+
+    .highlight {
+      color: #14b8a6;
+      font-weight: 600;
+    }
+
+    @media print {
+      .slide {
+        page-break-after: always;
+        height: 100vh;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 1: Titulní -->
+  <div class="slide slide-1">
+    <div class="logo">🎣</div>
+    <h1>Carp Club</h1>
+    <p class="subtitle">Moderní aplikace pro kaprařské závody</p>
+    <p class="tagline">Konec papírování, vítejte v digitální éře</p>
+    <div class="slide-number">1/6</div>
+  </div>
+
+  <!-- Slide 2: Jak to funguje -->
+  <div class="slide">
+    <h2>Jak to funguje?</h2>
+    <div class="content">
+      <ol class="steps-list">
+        <li>
+          <div class="step-content">
+            <div class="step-title">Dostanete pozvánku na email</div>
+            <div class="step-desc">Pořadatel vás přidá do týmu a vy obdržíte odkaz</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-content">
+            <div class="step-title">Kliknete a jste přihlášeni</div>
+            <div class="step-desc">Žádná registrace, žádná hesla - stačí jeden klik</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-content">
+            <div class="step-title">Chytíte rybu a vyfotíte ji</div>
+            <div class="step-desc">Zadáte váhu, druh a nahrajete fotku</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-content">
+            <div class="step-title">Sousední pegy potvrdí úlovek</div>
+            <div class="step-desc">2 potvrzení = úlovek je započítán do pořadí</div>
+          </div>
+        </li>
+      </ol>
+    </div>
+    <div class="slide-number">2/6</div>
+  </div>
+
+  <!-- Slide 3: Výhody pro závodníky -->
+  <div class="slide">
+    <h2>Co z toho máte vy?</h2>
+    <div class="content">
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <div class="benefit-icon">📱</div>
+          <div class="benefit-title">Vše v mobilu</div>
+          <div class="benefit-desc">Žádné papíry, tužky ani složité formuláře</div>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">⚡</div>
+          <div class="benefit-title">Live výsledky</div>
+          <div class="benefit-desc">Sledujte pořadí v reálném čase kdykoliv</div>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">📸</div>
+          <div class="benefit-title">Galerie úlovků</div>
+          <div class="benefit-desc">Všechny fotky na jednom místě</div>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">🔔</div>
+          <div class="benefit-title">Notifikace</div>
+          <div class="benefit-desc">Víte hned, když máte potvrdit úlovek</div>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">🏆</div>
+          <div class="benefit-title">Férové hodnocení</div>
+          <div class="benefit-desc">Systém potvrzení od sousedů = transparentnost</div>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">📊</div>
+          <div class="benefit-title">Statistiky</div>
+          <div class="benefit-desc">Vaše úlovky a historie závodů</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-number">3/6</div>
+  </div>
+
+  <!-- Slide 4: Jednoduchost -->
+  <div class="slide">
+    <h2>Maximální jednoduchost</h2>
+    <div class="content">
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🔐</div>
+          <div class="feature-title">Bez hesel</div>
+          <div class="feature-desc">Přihlášení jedním klikem přes email. Žádné zapomenuté heslo, žádná registrace.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👆</div>
+          <div class="feature-title">3 tapy k úlovku</div>
+          <div class="feature-desc">Otevřít aplikaci → Vyfotit → Odeslat. Tak jednoduché to je.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">✅</div>
+          <div class="feature-title">Rychlé potvrzení</div>
+          <div class="feature-desc">Když soused chytí, dostanete notifikaci. Potvrdíte jedním kliknutím.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌐</div>
+          <div class="feature-title">Funguje offline</div>
+          <div class="feature-desc">Aplikace funguje i bez internetu. Data se synchronizují, až bude signál.</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-number">4/6</div>
+  </div>
+
+  <!-- Slide 5: Budoucnost -->
+  <div class="slide">
+    <h2>Co přinese budoucnost?</h2>
+    <div class="content">
+      <div class="future-timeline">
+        <div class="timeline-item">
+          <div class="timeline-title">🏅 Celosezonní liga</div>
+          <div class="timeline-desc">Sledujte své postavení v lize A i B po celou sezonu. Automatický postup a sestup.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-title">📈 Osobní statistiky</div>
+          <div class="timeline-desc">Váš největší úlovek, průměrná váha, úspěšnost v závodech - vše na jednom místě.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-title">🤖 AI rozpoznávání</div>
+          <div class="timeline-desc">Automatické rozpoznání druhu ryby z fotky. Méně práce, více rybaření.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-title">💬 Týmový chat</div>
+          <div class="timeline-desc">Komunikace s týmem přímo v aplikaci. Strategie, tipy, motivace.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-title">🎥 Live stream</div>
+          <div class="timeline-desc">Sledujte vážení a ceremoniály online. Rodina vidí váš úspěch v přímém přenosu.</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-number">5/6</div>
+  </div>
+
+  <!-- Slide 6: CTA -->
+  <div class="slide cta-slide">
+    <h2>Připraveni na sezonu 2026?</h2>
+    <div class="content">
+      <div class="cta-box">
+        <div class="cta-title">Aplikace je dostupná na</div>
+        <a href="https://carpclub.app" class="cta-url">carpclub.app</a>
+        <p class="cta-note">Funguje na mobilu i počítači • Není potřeba nic instalovat</p>
+      </div>
+      <p style="margin-top: 50px; font-size: 24px; color: #94a3b8;">
+        Pozvánku dostanete od pořadatele emailem.<br>
+        <span class="highlight">Těšíme se na vás u vody!</span> 🎣
+      </p>
+    </div>
+    <div class="slide-number">6/6</div>
+  </div>
+
+</body>
+</html>
