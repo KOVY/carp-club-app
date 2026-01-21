@@ -146,6 +146,23 @@ export default async function Home() {
       {/* Hero Section - Marketing wow effect */}
       <HeroSection />
 
+      {/* Current competitions - PRIORITY: show immediately after hero */}
+      {aktualni.length > 0 && (
+        <section className="py-12 md:py-20 container mx-auto px-4">
+          <div className="flex items-center justify-between mb-6 md:mb-8">
+            <h2 className="text-xl md:text-3xl font-bold">
+              Aktuální závody
+            </h2>
+          </div>
+
+          <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {aktualni.map((zavod) => (
+              <ZavodCard key={zavod.id} zavod={zavod} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Features Section */}
       <FeaturesSection />
 
@@ -155,28 +172,11 @@ export default async function Home() {
       {/* How It Works Section */}
       <HowItWorksSection />
 
-      {/* Current competitions - if any exist */}
-      {aktualni.length > 0 && (
-        <section className="py-20 container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold">
-              Aktuální závody
-            </h2>
-          </div>
-          
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {aktualni.map((zavod) => (
-              <ZavodCard key={zavod.id} zavod={zavod} />
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* Archive preview - if any exist */}
       {archiv.length > 0 && (
-        <section className="py-20 container mx-auto px-4 border-t border-border/50">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold">
+        <section className="py-12 md:py-20 container mx-auto px-4 border-t border-border/50">
+          <div className="flex items-center justify-between mb-6 md:mb-8">
+            <h2 className="text-xl md:text-3xl font-bold">
               Archiv závodů
             </h2>
             <Button asChild variant="ghost" size="sm" className="hover-underline">
@@ -186,8 +186,8 @@ export default async function Home() {
               </Link>
             </Button>
           </div>
-          
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+
+          <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {archiv.map((zavod) => (
               <ZavodCard key={zavod.id} zavod={zavod} isArchive />
             ))}

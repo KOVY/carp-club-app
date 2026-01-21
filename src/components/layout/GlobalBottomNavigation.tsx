@@ -20,6 +20,11 @@ export function GlobalBottomNavigation() {
     return null
   }
 
+  // Don't show on landing page - it has its own hero + CTA
+  if (pathname === '/') {
+    return null
+  }
+
   return <BottomNavigationWrapper />
 }
 

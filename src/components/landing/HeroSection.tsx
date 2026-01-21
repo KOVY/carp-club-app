@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, Fish, Trophy, Users } from 'lucide-react'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { ThemeSwitcher } from '@/components/ui/ThemeSwitcher'
 
 interface HeroSectionProps {
   title?: string
@@ -53,6 +54,11 @@ export function HeroSection({
 
       {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/70 to-background/90" />
+
+      {/* Theme switcher - mobile only (desktop has it in header) */}
+      <div className="absolute top-4 right-4 z-20 md:hidden">
+        <ThemeSwitcher />
+      </div>
 
       {/* Animated gradient overlay */}
       <div

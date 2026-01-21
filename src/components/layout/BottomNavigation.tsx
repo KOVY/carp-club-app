@@ -49,7 +49,33 @@ export function BottomNavigation({
   const getNavItems = (): BottomNavItem[] => {
     if (zavodId) {
       // Context-aware navigation when in a závod
-      // Different nav items based on user role
+      // VEŘEJNOST (nepřihlášení) vidí zjednodušenou navigaci
+      if (!isAuthenticated) {
+        return [
+          {
+            icon: Home,
+            label: "Přehled",
+            href: `/zavod/${zavodId}`,
+          },
+          {
+            icon: Trophy,
+            label: "Pořadí",
+            href: `/zavod/${zavodId}/leaderboard`,
+          },
+          {
+            icon: ImageIcon,
+            label: "Galerie",
+            href: `/zavod/${zavodId}/galerie`,
+          },
+          {
+            icon: FileText,
+            label: "Pravidla",
+            href: `/zavod/${zavodId}/pravidla`,
+          },
+        ]
+      }
+
+      // ZÁVODNÍCI (přihlášení) - plná navigace
       const allItems: BottomNavItem[] = [
         {
           icon: Home,
@@ -61,15 +87,15 @@ export function BottomNavigation({
           label: "Pořadí",
           href: `/zavod/${zavodId}/leaderboard`,
         },
-        // "Přidat úlovek" - vždy viditelné (stránka sama ověří přihlášení a roli)
+        // "Přidat úlovek" - jen pro přihlášené s rolí
         {
           icon: Plus,
           label: "Přidat",
           href: `/zavod/${zavodId}/ulovky`,
           isHighlighted: true,
+          roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
         },
-        // "Potvrzení" - pro závodníky a kapitány přesměruje na novou stránku
-        // rozhodčí a pořadatelé mají přístup na /admin
+        // "Potvrzení" - pro závodníky a kapitány
         {
           icon: CheckCircle,
           label: "Potvrzení",
@@ -77,7 +103,7 @@ export function BottomNavigation({
           badge: pendingCount > 0 ? pendingCount : undefined,
           roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
         },
-        // Galerie pro všechny
+        // Galerie pro všechny přihlášené
         {
           icon: ImageIcon,
           label: "Galerie",
@@ -86,7 +112,7 @@ export function BottomNavigation({
         {
           icon: User,
           label: "Profil",
-          href: isAuthenticated ? "/profil" : "/login",
+          href: "/profil",
         },
       ]
 

@@ -50,11 +50,18 @@ interface UserData {
   name?: string
 }
 
+interface TeamData {
+  id: string
+  nazev: string
+  barva?: string | null
+}
+
 export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
   const [zavodId, setZavodId] = useState<string | null>(null)
   const [zavod, setZavod] = useState<Zavod | null>(null)
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [user, setUser] = useState<UserData | null>(null)
+  const [userTeam, setUserTeam] = useState<TeamData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
@@ -138,9 +145,36 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
         } else {
           setUserRole(null)
         }
+
+        // Načíst tým uživatele
+        const { data: teamMembership } = await supabase
+          .from('clenove_tymu')
+          .select('tym_id, tymy(id, nazev, barva)')
+          .eq('user_id', authUser.id)
+          .single()
+
+        if (teamMembership?.tymy) {
+          const team = teamMembership.tymy as unknown as TeamData
+          // Ověřit, že tým patří k tomuto závodu
+          const { data: teamCheck } = await supabase
+            .from('tymy')
+            .select('id, nazev, barva')
+            .eq('id', team.id)
+            .eq('zavod_id', zavodId)
+            .single()
+
+          if (teamCheck) {
+            setUserTeam(teamCheck as TeamData)
+          } else {
+            setUserTeam(null)
+          }
+        } else {
+          setUserTeam(null)
+        }
       } else {
         setUser(null)
         setUserRole(null)
+        setUserTeam(null)
       }
 
       setIsLoading(false)
@@ -265,6 +299,19 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
                 )}
               </>
             )}
+            {/* Badge s týmem a rolí pro závodníky */}
+            {userTeam && userRole && (
+              <span
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                style={userTeam.barva ? { backgroundColor: `${userTeam.barva}15`, borderColor: `${userTeam.barva}30`, color: userTeam.barva } : undefined}
+              >
+                <Users className="h-3 w-3" />
+                {userTeam.nazev}
+                <span className="text-[10px] opacity-70">
+                  {userRole === 'kapitan' ? '(K)' : ''}
+                </span>
+              </span>
+            )}
           </div>
           
           {/* Desktop navigation */}
@@ -321,6 +368,9 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
         <SwipeIndicator
           currentPage={pathname.replace(`/zavod/${zavodId}`, '') || ''}
           basePath={`/zavod/${zavodId}`}
+          isAuthenticated={!!user}
+          teamName={userTeam?.nazev}
+          userRole={userRole || undefined}
         />
       </div>
 
