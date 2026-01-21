@@ -273,12 +273,11 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
     // 1. Vytvořit nebo najít uživatele
     let targetUserId: string
 
-    // Zkontrolovat jestli uživatel existuje
-    const { data: existingUsers } = await adminClient.auth.admin.listUsers()
-    const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email)
+    // Zkontrolovat jestli uživatel existuje - použít getUserByEmail místo listUsers
+    const { data: existingUserData } = await adminClient.auth.admin.getUserByEmail(email)
 
-    if (existingUser) {
-      targetUserId = existingUser.id
+    if (existingUserData?.user) {
+      targetUserId = existingUserData.user.id
       console.log('User already exists:', targetUserId)
     } else {
       // Vytvořit nového uživatele pomocí Admin API
