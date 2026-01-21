@@ -24,6 +24,7 @@ import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher"
 import { BottomNavigationWrapper } from "@/components/layout/BottomNavigationWrapper"
 import { MobileMenu } from "@/components/layout/MobileMenu"
 import { SwipeableContainer } from "@/components/common/SwipeableContainer"
+import { SwipeIndicator } from "@/components/common/SwipeIndicator"
 import { AuthCallbackHandler } from "@/components/auth"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -314,6 +315,14 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
         userRole={userRole}
         pendingCount={pendingCount}
       />
+
+      {/* Swipe indicator - shows current page position (mobile only) */}
+      <div className="md:hidden border-b bg-background/50">
+        <SwipeIndicator
+          currentPage={pathname.replace(`/zavod/${zavodId}`, '') || ''}
+          basePath={`/zavod/${zavodId}`}
+        />
+      </div>
 
       {/* Main content with swipe navigation */}
       <SwipeableContainer
