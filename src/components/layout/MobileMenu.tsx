@@ -70,9 +70,9 @@ export function MobileMenu({
   const getNavItems = (): NavItem[] => {
     const baseItems: NavItem[] = [
       { href: "/", label: "Závody", icon: Home, exact: true },
+      { href: "/sezona", label: "Liga 2026", icon: Trophy },
       { href: "/kalendar", label: "Kalendář", icon: Calendar },
       { href: "/archiv", label: "Archiv", icon: Archive },
-      { href: "/zavod/demo", label: "Demo závod", icon: Play },
     ]
 
     // Add admin link only for organizers and admins (not for regular competitors)

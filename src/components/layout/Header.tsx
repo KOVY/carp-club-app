@@ -28,6 +28,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: "/", label: "Závody", exact: true },
+  { href: "/sezona", label: "Liga 2026" },
   { href: "/kalendar", label: "Kalendář" },
   { href: "/archiv", label: "Archiv" },
 ]

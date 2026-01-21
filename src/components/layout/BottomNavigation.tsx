@@ -129,14 +129,14 @@ export function BottomNavigation({
       },
       {
         icon: Trophy,
-        label: "Archiv",
-        href: "/archiv",
+        label: "Liga",
+        href: "/sezona",
+        isHighlighted: true,
       },
       {
-        icon: Plus,
-        label: "Demo",
-        href: "/zavod/demo",
-        isHighlighted: true,
+        icon: ImageIcon,
+        label: "Archiv",
+        href: "/archiv",
       },
       // Admin only for organizers/admins
       {

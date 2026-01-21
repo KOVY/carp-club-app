@@ -37,7 +37,8 @@ export function SwipeIndicator({
 }: SwipeIndicatorProps) {
   // Použij různé stránky pro veřejnost a závodníky
   const pages = isAuthenticated ? ZAVOD_PAGES : PUBLIC_PAGES
-  const currentIndex = pages.indexOf(currentPage as typeof pages[number])
+  // Použij findIndex pro bezpečné hledání bez type assertion
+  const currentIndex = (pages as readonly string[]).indexOf(currentPage)
 
   // Don't show if current page is not in swipeable list
   if (currentIndex === -1) {

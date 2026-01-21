@@ -153,8 +153,9 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
           .eq('user_id', authUser.id)
           .single()
 
-        if (teamMembership?.tymy) {
-          const team = teamMembership.tymy as unknown as TeamData
+        const membershipData = teamMembership as { tym_id: string; tymy: TeamData | null } | null
+        if (membershipData?.tymy) {
+          const team = membershipData.tymy
           // Ověřit, že tým patří k tomuto závodu
           const { data: teamCheck } = await supabase
             .from('tymy')
