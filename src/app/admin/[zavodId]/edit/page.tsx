@@ -44,8 +44,8 @@ export default function EditZavodPage({ params }: PageProps) {
     datum_end: "",
     embargo_od: "",
     pravidla: "",
-    min_vaha_kg: "4",
-    top_n_ryb: "10",
+    min_vaha_kg: "5",
+    top_n_ryb: "7",
     pocet_potvrzeni: "2",
   })
 
@@ -62,8 +62,8 @@ export default function EditZavodPage({ params }: PageProps) {
           datum_end: z.datum_end ? formatDateTimeLocal(z.datum_end) : "",
           embargo_od: z.embargo_od ? formatDateTimeLocal(z.embargo_od) : "",
           pravidla: z.pravidla || "",
-          min_vaha_kg: String(z.min_vaha_kg || 4),
-          top_n_ryb: String(z.top_n_ryb || 10),
+          min_vaha_kg: String(z.min_vaha_kg || 5),
+          top_n_ryb: String(z.top_n_ryb || 7),
           pocet_potvrzeni: String(z.pocet_potvrzeni || 2),
         })
       } else {
@@ -120,7 +120,7 @@ export default function EditZavodPage({ params }: PageProps) {
       embargo_od: formData.embargo_od || null,
       pravidla: formData.pravidla.trim() || undefined,
       min_vaha_kg: parseFloat(formData.min_vaha_kg) || 5,
-      top_n_ryb: parseInt(formData.top_n_ryb) || 5,
+      top_n_ryb: parseInt(formData.top_n_ryb) || 7,
       pocet_potvrzeni: parseInt(formData.pocet_potvrzeni) || 2,
     })
 

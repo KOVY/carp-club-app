@@ -14,6 +14,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import { canConfirmUlovek, isSelfConfirmation } from '@/lib/permissions'
 import type { 
@@ -184,12 +185,81 @@ export async function potvrditUlovek(input: PotvrzeniInput): Promise<ActionResul
       }
     }
 
+    // Rozhodčí/pořadatel - okamžité potvrzení bez záznamu v tabulce potvrzeni
+    // Requirement 4.4: Referee confirmation marks catch as confirmed immediately
+    if (isRozhodciOrPoradatel) {
+      const adminClient = createAdminClient()
+
+      if (potvrzeno) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: updateError } = await (adminClient.from('ulovky') as any)
+          .update({
+            stav: 'potvrzeno',
+            potvrzeno_rozhodcim: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', ulovekId)
+
+        if (updateError) {
+          console.error('[potvrditUlovek] Rozhodci update error:', updateError)
+          return {
+            success: false,
+            error: {
+              code: ErrorCodes.DATABASE_ERROR,
+              message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
+              details: { originalError: updateError.message },
+            },
+          }
+        }
+      } else {
+        // Rozhodčí zamítl úlovek
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: updateError } = await (adminClient.from('ulovky') as any)
+          .update({
+            stav: 'zamitnuto',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', ulovekId)
+
+        if (updateError) {
+          console.error('[potvrditUlovek] Rozhodci reject error:', updateError)
+          return {
+            success: false,
+            error: {
+              code: ErrorCodes.DATABASE_ERROR,
+              message: ErrorMessages[ErrorCodes.DATABASE_ERROR],
+              details: { originalError: updateError.message },
+            },
+          }
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          potvrzeniId: `rozhodci-${ulovekId}`, // Pseudo ID pro rozhodčího
+        },
+      }
+    }
+
+    // Kapitán sousedního pegu - standardní potvrzení
+    // Musí mít tým
+    if (!permissionCtx.tymId) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.USER_NOT_IN_TEAM,
+          message: 'Pro potvrzení úlovku musíte být členem týmu',
+        },
+      }
+    }
+
     // Check if user/team has already confirmed this catch
     const { data: existingPotvrzeni } = await supabase
       .from('potvrzeni')
       .select('id')
       .eq('ulovek_id', ulovekId)
-      .or(`potvrdil_user_id.eq.${user.id}${permissionCtx.tymId ? `,potvrdil_tym_id.eq.${permissionCtx.tymId}` : ''}`)
+      .eq('potvrdil_tym_id', permissionCtx.tymId)
       .single()
 
     if (existingPotvrzeni) {
@@ -197,29 +267,32 @@ export async function potvrditUlovek(input: PotvrzeniInput): Promise<ActionResul
         success: false,
         error: {
           code: ErrorCodes.ALREADY_CONFIRMED,
-          message: 'Tento úlovek jste již potvrdili',
+          message: 'Váš tým již tento úlovek potvrdil',
         },
       }
     }
 
-    // Insert confirmation record
+    // Insert confirmation record using admin client (permissions already verified)
     // The database trigger will automatically update the catch status
+    const adminClient = createAdminClient()
+
     const insertData = {
       ulovek_id: ulovekId,
       potvrdil_user_id: user.id,
-      potvrdil_tym_id: permissionCtx.tymId || ulovekData.tym_id, // Use catch team if rozhodci has no team
+      potvrdil_tym_id: permissionCtx.tymId,
       potvrzeno,
       poznamka: poznamka || null,
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: potvrzeni, error: insertError } = await (supabase
+    const { data: potvrzeni, error: insertError } = await (adminClient
       .from('potvrzeni') as any)
       .insert(insertData)
       .select('id')
       .single()
 
     if (insertError || !potvrzeni) {
+      console.error('[potvrditUlovek] Insert error:', insertError)
       return {
         success: false,
         error: {
@@ -228,19 +301,6 @@ export async function potvrditUlovek(input: PotvrzeniInput): Promise<ActionResul
           details: { originalError: insertError?.message },
         },
       }
-    }
-
-    // If rozhodci/poradatel confirms, also update the catch directly
-    // Requirement 4.4: Referee confirmation marks catch as confirmed
-    if (isRozhodciOrPoradatel && potvrzeno) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('ulovky') as any)
-        .update({ 
-          stav: 'potvrzeno', 
-          potvrzeno_rozhodcim: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', ulovekId)
     }
 
     return {

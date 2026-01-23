@@ -24,9 +24,9 @@ export const MIN_VAHA_KG = 5;
 
 /**
  * Number of top fish to count for team score
- * Requirement 5.1: Score is sum of top 5 heaviest confirmed fish
+ * Pravidla 2026: Score is sum of top 7 heaviest confirmed fish
  */
-export const TOP_N_RYB = 5;
+export const TOP_N_RYB = 7;
 
 /**
  * Default number of confirmations required for a catch

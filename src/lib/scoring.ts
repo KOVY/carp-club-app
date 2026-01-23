@@ -1,10 +1,10 @@
 /**
  * Scoring module for calculating team scores
  * SERVER ONLY - never import in client components
- * 
- * Requirements:
- * - 5.1: Score is sum of top 5 heaviest confirmed fish
- * - 5.2: If team has less than 5 fish, sum all confirmed fish
+ *
+ * Requirements (Pravidla 2026):
+ * - 5.1: Score is sum of top 7 heaviest confirmed fish
+ * - 5.2: If team has less than 7 fish, sum all confirmed fish
  * - 5.3: Only fish with weight >= 5kg count
  * - 5.4: Both kapr and amur count towards the same total
  * - 5.5: Tie-breaking by time of last counted catch (earlier = better)
@@ -17,9 +17,9 @@ import type { LeaderboardEntry, ScoringResult } from './types';
 
 /**
  * Calculate team score from their catches
- * 
+ *
  * @param ulovky - Array of team's catches
- * @returns ScoringResult with score, top 5 fish, and count
+ * @returns ScoringResult with score, top N fish (7 by default), and count
  */
 export function calculateTymScore(ulovky: Ulovek[]): ScoringResult {
   // 1. Filter only confirmed catches (stav = 'potvrzeno')
@@ -31,7 +31,7 @@ export function calculateTymScore(ulovky: Ulovek[]): ScoringResult {
   // 3. Sort descending by weight
   const sorted = [...validni].sort((a, b) => b.vaha - a.vaha);
   
-  // 4. Take top N (5) fish
+  // 4. Take top N fish (7 by Pravidla 2026)
   const top5 = sorted.slice(0, TOP_N_RYB);
   
   // 5. Sum weights
@@ -77,8 +77,8 @@ export function sortLeaderboard(entries: LeaderboardEntry[]): LeaderboardEntry[]
 /**
  * Get the time of the last counted catch for tie-breaking
  * Uses the confirmation time (updated_at when stav changed to 'potvrzeno')
- * 
- * @param top5Ryby - Array of top 5 fish for the team
+ *
+ * @param top5Ryby - Array of top N fish for the team
  * @returns ISO string of the latest confirmation time, or epoch if no fish
  */
 export function getPoradiCas(top5Ryby: Ulovek[]): string {

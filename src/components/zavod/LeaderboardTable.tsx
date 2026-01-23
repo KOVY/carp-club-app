@@ -31,9 +31,9 @@ interface LeaderboardTableProps {
 
 /**
  * LeaderboardTable - Display competition leaderboard
- * 
+ *
  * Requirements:
- * - 5.1: Display team rankings based on score (sum of top 5 fish)
+ * - 5.1: Display team rankings based on score (sum of top 7 fish - Pravidla 2026)
  * - 5.7: Respect embargo (hide weights during embargo)
  */
 export function LeaderboardTable({
@@ -101,7 +101,7 @@ export function LeaderboardTable({
         </GlassCardTitle>
         <GlassCardDescription>
           {weightsVisible
-            ? "Aktuální pořadí týmů podle součtu top 5 ryb"
+            ? "Aktuální pořadí týmů podle součtu top 7 ryb"
             : "Váhy jsou skryté během embarga"}
         </GlassCardDescription>
       </GlassCardHeader>

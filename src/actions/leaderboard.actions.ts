@@ -3,10 +3,10 @@
 
 /**
  * Leaderboard Server Actions
- * 
- * Requirements:
- * - 5.1: Score is sum of top 5 heaviest confirmed fish
- * - 5.2: If team has less than 5 fish, sum all confirmed fish
+ *
+ * Requirements (Pravidla 2026):
+ * - 5.1: Score is sum of top 7 heaviest confirmed fish
+ * - 5.2: If team has less than 7 fish, sum all confirmed fish
  * - 5.3: Only fish with weight >= 5kg count
  * - 5.4: Both kapr and amur count towards the same total
  * - 5.5: Tie-breaking by time of last counted catch (earlier = better)
@@ -33,9 +33,9 @@ import type {
 
 /**
  * Get leaderboard for a competition
- * 
- * Requirements:
- * - 5.1, 5.2, 5.3, 5.4: Calculate score using top 5 heaviest confirmed fish >= 5kg
+ *
+ * Requirements (Pravidla 2026):
+ * - 5.1, 5.2, 5.3, 5.4: Calculate score using top 7 heaviest confirmed fish >= 5kg
  * - 5.5: Tie-breaking by time of last counted catch
  * - 5.7: Respect embargo (hide weights during embargo for non-privileged users)
  */

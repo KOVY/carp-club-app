@@ -3,11 +3,14 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar, MapPin, Trophy, Clock, Archive } from 'lucide-react'
-import { 
-  HeroSection, 
-  FeaturesSection, 
-  DemoPreviewSection, 
-  HowItWorksSection 
+import {
+  HeroSection,
+  FeaturesSection,
+  DemoPreviewSection,
+  HowItWorksSection,
+  SocialProofSection,
+  FAQSection,
+  OrganizersSection,
 } from '@/components/landing'
 import type { Zavod, Soutez } from '@/lib/types'
 
@@ -139,6 +142,9 @@ export default async function Home() {
       {/* Hero Section - Marketing wow effect */}
       <HeroSection />
 
+      {/* Social Proof - Trust building */}
+      <SocialProofSection />
+
       {/* Current competitions - PRIORITY: show immediately after hero */}
       {aktualni.length > 0 && (
         <section id="zavody" className="py-12 md:py-20 container mx-auto px-4 scroll-mt-20">
@@ -164,6 +170,12 @@ export default async function Home() {
 
       {/* How It Works Section */}
       <HowItWorksSection />
+
+      {/* For Organizers Section - B2B targeting */}
+      <OrganizersSection />
+
+      {/* FAQ Section */}
+      <FAQSection />
 
       {/* Archive preview - if any exist */}
       {archiv.length > 0 && (
