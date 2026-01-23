@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { X, Fish, Home, Archive, LogIn, LogOut, Trophy, CheckCircle, Image as ImageIcon, FileText, Settings, Users, Eye, Shield, Play, Calendar } from "lucide-react"
+import { X, Fish, Home, Archive, LogOut, Trophy, CheckCircle, Image as ImageIcon, FileText, Settings, Users, Eye, Shield, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
@@ -287,9 +287,9 @@ export function MobileMenu({
             )}
           </nav>
           
-          {/* Footer */}
-          <div className="p-4 border-t">
-            {user ? (
+          {/* Footer - only show logout for logged-in users */}
+          {user && (
+            <div className="p-4 border-t">
               <Button
                 variant="outline"
                 className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors duration-150"
@@ -301,15 +301,8 @@ export function MobileMenu({
                 <LogOut className="h-4 w-4 mr-2" />
                 Odhlásit se
               </Button>
-            ) : (
-              <Button asChild className="w-full">
-                <Link href="/login" onClick={onClose}>
-                  <LogIn className="h-4 w-4 mr-2" />
-                  Přihlásit se
-                </Link>
-              </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

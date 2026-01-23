@@ -3,17 +3,18 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  Fish, 
-  Trophy, 
-  Image as ImageIcon, 
-  FileText, 
+import {
+  Fish,
+  Trophy,
+  Image as ImageIcon,
+  FileText,
   Menu,
   X,
   CheckCircle,
   Sparkles,
   Plus,
-  Clock
+  Clock,
+  Home
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -160,38 +161,31 @@ export default function DemoLayout({ children }: DemoLayoutProps) {
 
 // Simple bottom navigation for demo with protected action
 function DemoBottomNav({ pathname }: { pathname: string }) {
-  const items = [
-    { href: `/zavod/${DEMO_ZAVOD_ID}`, label: "Info", icon: Fish },
-    { href: `/zavod/${DEMO_ZAVOD_ID}/leaderboard`, label: "Live", icon: Trophy },
-    // "Add catch" is a protected action - handled separately
-    { href: `/zavod/${DEMO_ZAVOD_ID}/potvrzeni`, label: "Potvrdit", icon: Clock },
-    { href: `/zavod/${DEMO_ZAVOD_ID}/galerie`, label: "Foto", icon: ImageIcon },
-  ]
-
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t md:hidden safe-area-bottom">
       <div className="flex items-center justify-around h-16 px-1">
-        {/* First two nav items */}
-        {items.slice(0, 2).map((item) => {
-          const Icon = item.icon
-          const isActive = pathname === item.href
+        {/* Home - back to landing */}
+        <Link
+          href="/"
+          className="flex flex-col items-center justify-center gap-0.5 py-2 flex-1 max-w-[64px] text-muted-foreground"
+        >
+          <Home className="h-5 w-5" />
+          <span className="text-[10px] font-medium">Domů</span>
+        </Link>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 max-w-[72px]",
-                isActive ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </Link>
-          )
-        })}
+        {/* Live leaderboard */}
+        <Link
+          href={`/zavod/${DEMO_ZAVOD_ID}/leaderboard`}
+          className={cn(
+            "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 max-w-[64px]",
+            pathname.includes("/leaderboard") ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          <Trophy className="h-5 w-5" />
+          <span className="text-[10px] font-medium">Live</span>
+        </Link>
 
-        {/* Protected "Add catch" button - Requirement 5.7 */}
+        {/* Protected "Add catch" button */}
         <DemoProtectedButton
           actionDescription="přidání úlovku"
           variant="default"
@@ -200,25 +194,29 @@ function DemoBottomNav({ pathname }: { pathname: string }) {
           <Plus className="h-5 w-5" />
         </DemoProtectedButton>
 
-        {/* Last two nav items */}
-        {items.slice(2).map((item) => {
-          const Icon = item.icon
-          const isActive = pathname === item.href
+        {/* Confirmations */}
+        <Link
+          href={`/zavod/${DEMO_ZAVOD_ID}/potvrzeni`}
+          className={cn(
+            "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 max-w-[64px]",
+            pathname.includes("/potvrzeni") ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          <Clock className="h-5 w-5" />
+          <span className="text-[10px] font-medium">Potvrdit</span>
+        </Link>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 max-w-[72px]",
-                isActive ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </Link>
-          )
-        })}
+        {/* Gallery */}
+        <Link
+          href={`/zavod/${DEMO_ZAVOD_ID}/galerie`}
+          className={cn(
+            "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 max-w-[64px]",
+            pathname.includes("/galerie") ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          <ImageIcon className="h-5 w-5" />
+          <span className="text-[10px] font-medium">Foto</span>
+        </Link>
       </div>
     </nav>
   )
