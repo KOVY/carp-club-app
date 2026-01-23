@@ -228,29 +228,34 @@ export default function AdminPage({ params }: AdminPageProps) {
             Správa úlovků a týmů
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchData}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            <span className="ml-2">Obnovit</span>
+          </Button>
+          {/* Export HTML - pouze pro pořadatele */}
+          {userRole === 'poradatel' && (
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+            >
+              <a href={`/api/export/${zavodId}`} download>
+                <Download className="h-4 w-4" />
+                <span className="ml-2">Export HTML</span>
+              </a>
+            </Button>
           )}
-          <span className="ml-2">Obnovit</span>
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          asChild
-        >
-          <a href={`/api/export/${zavodId}`} download>
-            <Download className="h-4 w-4" />
-            <span className="ml-2">Export HTML</span>
-          </a>
-        </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { usePendingConfirmations } from "@/hooks/usePendingConfirmations"
 import { getAdjacentPages } from "@/lib/navigation-order"
+import { getUserRoleInZavod } from "@/actions/ulovky.actions"
 import type { Zavod, UserRole } from "@/lib/types"
 
 interface ZavodLayoutProps {
@@ -131,45 +132,25 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
           name: (profile as { jmeno?: string } | null)?.jmeno,
         })
 
-        const { data: roleData, error: roleError } = await supabase
-          .from('zavod_role')
-          .select('role')
-          .eq('user_id', authUser.id)
-          .eq('zavod_id', zavodId)
-          .single()
+        // Use server action to get role and team (bypasses RLS)
+        const roleResult = await getUserRoleInZavod(zavodId)
+        console.log('fetchUserAndRole: Role result:', roleResult)
 
-        console.log('fetchUserAndRole: Role result:', { role: roleData, error: roleError?.message })
+        if (roleResult.success && roleResult.data) {
+          setUserRole(roleResult.data.role)
 
-        if (roleData) {
-          setUserRole((roleData as { role: UserRole }).role)
-        } else {
-          setUserRole(null)
-        }
-
-        // Načíst tým uživatele
-        const { data: teamMembership } = await supabase
-          .from('clenove_tymu')
-          .select('tym_id, tymy(id, nazev, barva)')
-          .eq('user_id', authUser.id)
-          .single()
-
-        const membershipData = teamMembership as { tym_id: string; tymy: TeamData | null } | null
-        if (membershipData?.tymy) {
-          const team = membershipData.tymy
-          // Ověřit, že tým patří k tomuto závodu
-          const { data: teamCheck } = await supabase
-            .from('tymy')
-            .select('id, nazev, barva')
-            .eq('id', team.id)
-            .eq('zavod_id', zavodId)
-            .single()
-
-          if (teamCheck) {
-            setUserTeam(teamCheck as TeamData)
+          // Set team data if user has a team
+          if (roleResult.data.tymId && roleResult.data.tymNazev) {
+            setUserTeam({
+              id: roleResult.data.tymId,
+              nazev: roleResult.data.tymNazev,
+              barva: roleResult.data.tymBarva,
+            })
           } else {
             setUserTeam(null)
           }
         } else {
+          setUserRole(null)
           setUserTeam(null)
         }
       } else {

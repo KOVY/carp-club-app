@@ -38,7 +38,7 @@ import type {
  * Get user's role in a competition
  * Uses adminClient to bypass RLS
  */
-export async function getUserRoleInZavod(zavodId: string): Promise<ActionResult<{ role: UserRole | null; tymId: string | null }>> {
+export async function getUserRoleInZavod(zavodId: string): Promise<ActionResult<{ role: UserRole | null; tymId: string | null; tymNazev: string | null; tymBarva: string | null }>> {
   try {
     const supabase = await createClient()
     const adminClient = createAdminClient()
@@ -46,7 +46,7 @@ export async function getUserRoleInZavod(zavodId: string): Promise<ActionResult<
     // Get current user
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return { success: true, data: { role: null, tymId: null } }
+      return { success: true, data: { role: null, tymId: null, tymNazev: null, tymBarva: null } }
     }
 
     // First check zavod_role
@@ -61,11 +61,12 @@ export async function getUserRoleInZavod(zavodId: string): Promise<ActionResult<
       // Get team membership if exists
       const { data: teams } = await adminClient
         .from('tymy')
-        .select('id')
+        .select('id, nazev, barva')
         .eq('zavod_id', zavodId)
 
       if (teams && teams.length > 0) {
-        const teamIds = (teams as { id: string }[]).map(t => t.id)
+        const teamsData = teams as { id: string; nazev: string; barva: string | null }[]
+        const teamIds = teamsData.map(t => t.id)
         const { data: membership } = await adminClient
           .from('clenove_tymu')
           .select('tym_id')
@@ -73,26 +74,32 @@ export async function getUserRoleInZavod(zavodId: string): Promise<ActionResult<
           .in('tym_id', teamIds)
           .single()
 
-        return {
-          success: true,
-          data: {
-            role: (zavodRole as { role: UserRole }).role,
-            tymId: membership ? (membership as { tym_id: string }).tym_id : null
+        if (membership) {
+          const userTeam = teamsData.find(t => t.id === (membership as { tym_id: string }).tym_id)
+          return {
+            success: true,
+            data: {
+              role: (zavodRole as { role: UserRole }).role,
+              tymId: (membership as { tym_id: string }).tym_id,
+              tymNazev: userTeam?.nazev || null,
+              tymBarva: userTeam?.barva || null
+            }
           }
         }
       }
 
-      return { success: true, data: { role: (zavodRole as { role: UserRole }).role, tymId: null } }
+      return { success: true, data: { role: (zavodRole as { role: UserRole }).role, tymId: null, tymNazev: null, tymBarva: null } }
     }
 
     // Check team membership via invitation
     const { data: teams } = await adminClient
       .from('tymy')
-      .select('id')
+      .select('id, nazev, barva')
       .eq('zavod_id', zavodId)
 
     if (teams && teams.length > 0) {
-      const teamIds = (teams as { id: string }[]).map(t => t.id)
+      const teamsData = teams as { id: string; nazev: string; barva: string | null }[]
+      const teamIds = teamsData.map(t => t.id)
 
       // Check direct membership
       const { data: membership } = await adminClient
@@ -103,11 +110,14 @@ export async function getUserRoleInZavod(zavodId: string): Promise<ActionResult<
         .single()
 
       if (membership) {
+        const userTeam = teamsData.find(t => t.id === (membership as { tym_id: string }).tym_id)
         return {
           success: true,
           data: {
             role: (membership as { role: UserRole }).role,
-            tymId: (membership as { tym_id: string }).tym_id
+            tymId: (membership as { tym_id: string }).tym_id,
+            tymNazev: userTeam?.nazev || null,
+            tymBarva: userTeam?.barva || null
           }
         }
       }
@@ -138,18 +148,21 @@ export async function getUserRoleInZavod(zavodId: string): Promise<ActionResult<
               role: inv.role || 'zavodnik',
             }, { onConflict: 'tym_id,user_id' })
 
+          const userTeam = teamsData.find(t => t.id === inv.tym_id)
           return {
             success: true,
             data: {
               role: (inv.role || 'zavodnik') as UserRole,
-              tymId: inv.tym_id
+              tymId: inv.tym_id,
+              tymNazev: userTeam?.nazev || null,
+              tymBarva: userTeam?.barva || null
             }
           }
         }
       }
     }
 
-    return { success: true, data: { role: null, tymId: null } }
+    return { success: true, data: { role: null, tymId: null, tymNazev: null, tymBarva: null } }
   } catch (error) {
     return {
       success: false,
