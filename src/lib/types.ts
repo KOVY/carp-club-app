@@ -136,6 +136,32 @@ export interface UpdateZavodInput {
   min_vaha_kg?: number;
   top_n_ryb?: number;
   pocet_potvrzeni?: number;
+  // Map coordinates
+  map_lat?: number | null;
+  map_lng?: number | null;
+  map_zoom?: number;
+  map_location_name?: string | null;
+}
+
+// Map-related types
+export interface MapCoordinates {
+  lat: number;
+  lng: number;
+}
+
+export interface PegMapData {
+  pegCislo: number;
+  lat: number;
+  lng: number;
+  tymId?: string;
+  tymNazev?: string;
+  tymBarva?: string;
+}
+
+export interface UpdateTymMapInput {
+  tymId: string;
+  peg_lat?: number | null;
+  peg_lng?: number | null;
 }
 
 export interface CreateTymInput {

@@ -775,3 +775,73 @@ export async function copyTeamsFromZavod(
     }
   }
 }
+
+/**
+ * Aktualizovat GPS souřadnice pegu týmu
+ * Používá se pro nastavení pozice na mapě
+ */
+export async function updateTymPegLocation(
+  tymId: string,
+  input: { peg_lat?: number | null; peg_lng?: number | null }
+): Promise<ActionResult<void>> {
+  try {
+    const adminClient = createAdminClient()
+
+    // Získat závod_id z týmu pro kontrolu oprávnění
+    const { data: tymData, error: tymError } = await adminClient
+      .from('tymy')
+      .select('zavod_id')
+      .eq('id', tymId)
+      .single()
+
+    if (tymError || !tymData) {
+      return {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Tým nenalezen',
+        },
+      }
+    }
+
+    const tym = tymData as { zavod_id: string }
+
+    // Ověřit přístup k závodu
+    const userId = await checkZavodAdminAccess(tym.zavod_id)
+    if (!userId) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.UNAUTHORIZED,
+          message: 'Nemáte oprávnění upravovat tým',
+        },
+      }
+    }
+
+    // Aktualizovat GPS souřadnice
+    const { error: updateError } = await (adminClient
+      .from('tymy') as any)
+      .update({
+        peg_lat: input.peg_lat,
+        peg_lng: input.peg_lng,
+      })
+      .eq('id', tymId)
+
+    if (updateError) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.DATABASE_ERROR,
+          message: 'Nepodařilo se aktualizovat pozici pegu',
+        },
+      }
+    }
+
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: toErrorResponse(error),
+    }
+  }
+}
