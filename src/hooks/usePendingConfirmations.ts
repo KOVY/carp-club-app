@@ -68,16 +68,11 @@ export function usePendingConfirmations({
         return
       }
 
-      // Check if user is rozhodci or poradatel
-      const { data: zavodRole } = await supabase
-        .from('zavod_role')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('zavod_id', zavodId)
-        .single()
-
-      const isRozhodciOrPoradatel = zavodRole && 
-        ['rozhodci', 'poradatel'].includes((zavodRole as { role: string }).role)
+      // Check user role using server action (bypasses RLS)
+      const roleResult = await getUserRoleInZavod(zavodId)
+      const userRoleData = roleResult.success ? roleResult.data : null
+      const isRozhodciOrPoradatel = userRoleData?.role &&
+        ['rozhodci', 'poradatel'].includes(userRoleData.role)
 
       // Get all teams in zavod with their peg numbers
       const { data: teams } = await supabase
@@ -93,10 +88,9 @@ export function usePendingConfirmations({
 
       const teamsData = teams as Pick<Tym, 'id' | 'peg_cislo'>[]
 
-      // Find user's team membership using server action (bypasses RLS)
-      const roleResult = await getUserRoleInZavod(zavodId)
-      const membership = roleResult.success && roleResult.data?.tymId
-        ? { tym_id: roleResult.data.tymId, role: roleResult.data.role }
+      // Use role data from server action (already fetched above)
+      const membership = userRoleData?.tymId
+        ? { tym_id: userRoleData.tymId, role: userRoleData.role }
         : null
 
       // Get catches waiting for confirmation (stav = 'ceka')

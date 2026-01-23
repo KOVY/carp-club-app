@@ -228,11 +228,14 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
   // Navigace pro PŘIHLÁŠENÉ (závodníci, rozhodčí, pořadatel)
   const authNavItems: NavItem[] = [
     { href: `/zavod/${zavodId}`, label: "Přehled", icon: <Fish className="h-4 w-4" /> },
-    { href: `/zavod/${zavodId}/ulovky`, label: "Přidat úlovek", icon: <Fish className="h-4 w-4" />, roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'] },
+    // Přidat úlovek - pouze pro závodníky a kapitány (ne rozhodčí - nemají tým)
+    { href: `/zavod/${zavodId}/ulovky`, label: "Přidat úlovek", icon: <Fish className="h-4 w-4" />, roles: ['zavodnik', 'kapitan'] },
     { href: `/zavod/${zavodId}/leaderboard`, label: "Pořadí", icon: <Trophy className="h-4 w-4" /> },
-    { href: `/zavod/${zavodId}/potvrzeni`, label: "Potvrzení", icon: <CheckCircle className="h-4 w-4" />, roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'] },
+    // Potvrzení - pouze pro závodníky a kapitány (rozhodčí mají Rozhodčí panel)
+    { href: `/zavod/${zavodId}/potvrzeni`, label: "Potvrzení", icon: <CheckCircle className="h-4 w-4" />, roles: ['zavodnik', 'kapitan'] },
     { href: `/zavod/${zavodId}/galerie`, label: "Galerie", icon: <ImageIcon className="h-4 w-4" /> },
     { href: `/zavod/${zavodId}/pravidla`, label: "Pravidla", icon: <FileText className="h-4 w-4" /> },
+    // Rozhodčí panel - pro rozhodčí a pořadatele
     { href: `/zavod/${zavodId}/admin`, label: "Rozhodčí panel", icon: <Users className="h-4 w-4" />, roles: ['rozhodci', 'poradatel'] },
     { href: `/zavod/${zavodId}/admin/nastaveni`, label: "Nastavení", icon: <Settings className="h-4 w-4" />, roles: ['poradatel'] },
   ]

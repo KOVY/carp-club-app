@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Trophy, Plus, CheckCircle, User, Image as ImageIcon, FileText } from "lucide-react"
+import { Home, Trophy, Plus, CheckCircle, User, Image as ImageIcon, FileText, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { UserRole } from "@/lib/types"
 
@@ -82,13 +82,13 @@ export function BottomNavigation({
           label: "Live",
           href: `/zavod/${zavodId}/leaderboard`,
         },
-        // "Přidat úlovek" - jen pro přihlášené s rolí
+        // "Přidat úlovek" - jen pro závodníky a kapitány (rozhodčí nemají tým)
         {
           icon: Plus,
           label: "Přidat",
           href: `/zavod/${zavodId}/ulovky`,
           isHighlighted: true,
-          roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
+          roles: ['zavodnik', 'kapitan'],
         },
         // "Potvrzení" - pro závodníky a kapitány
         {
@@ -96,7 +96,15 @@ export function BottomNavigation({
           label: "Potvrdit",
           href: `/zavod/${zavodId}/potvrzeni`,
           badge: pendingCount > 0 ? pendingCount : undefined,
-          roles: ['zavodnik', 'kapitan', 'rozhodci', 'poradatel'],
+          roles: ['zavodnik', 'kapitan'],
+        },
+        // "Rozhodčí panel" - pro rozhodčí a pořadatele
+        {
+          icon: Users,
+          label: "Panel",
+          href: `/zavod/${zavodId}/admin`,
+          badge: pendingCount > 0 ? pendingCount : undefined,
+          roles: ['rozhodci', 'poradatel'],
         },
         {
           icon: User,
