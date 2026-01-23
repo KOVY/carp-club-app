@@ -11,7 +11,12 @@ interface UserData {
   name?: string
 }
 
-export function HeaderWrapper() {
+interface HeaderWrapperProps {
+  /** Enable floating mode with margins */
+  floating?: boolean
+}
+
+export function HeaderWrapper({ floating }: HeaderWrapperProps) {
   const [user, setUser] = useState<UserData | null>(null)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
@@ -45,5 +50,5 @@ export function HeaderWrapper() {
     })
   }
 
-  return <Header user={user} onSignOut={handleSignOut} />
+  return <Header user={user} onSignOut={handleSignOut} floating={floating} />
 }

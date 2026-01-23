@@ -161,32 +161,32 @@ export default function DemoLayout({ children }: DemoLayoutProps) {
 // Simple bottom navigation for demo with protected action
 function DemoBottomNav({ pathname }: { pathname: string }) {
   const items = [
-    { href: `/zavod/${DEMO_ZAVOD_ID}`, label: "Přehled", icon: Fish },
-    { href: `/zavod/${DEMO_ZAVOD_ID}/leaderboard`, label: "Pořadí", icon: Trophy },
+    { href: `/zavod/${DEMO_ZAVOD_ID}`, label: "Info", icon: Fish },
+    { href: `/zavod/${DEMO_ZAVOD_ID}/leaderboard`, label: "Live", icon: Trophy },
     // "Add catch" is a protected action - handled separately
-    { href: `/zavod/${DEMO_ZAVOD_ID}/potvrzeni`, label: "Potvrzení", icon: Clock },
-    { href: `/zavod/${DEMO_ZAVOD_ID}/galerie`, label: "Galerie", icon: ImageIcon },
+    { href: `/zavod/${DEMO_ZAVOD_ID}/potvrzeni`, label: "Potvrdit", icon: Clock },
+    { href: `/zavod/${DEMO_ZAVOD_ID}/galerie`, label: "Foto", icon: ImageIcon },
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t md:hidden">
-      <div className="flex items-center justify-around h-16 pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t md:hidden safe-area-bottom">
+      <div className="flex items-center justify-around h-16 px-1">
         {/* First two nav items */}
         {items.slice(0, 2).map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href
-          
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-3 py-2 min-w-[64px]",
+                "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 max-w-[72px]",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-xs">{item.label}</span>
+              <span className="text-[10px] font-medium">{item.label}</span>
             </Link>
           )
         })}
@@ -195,27 +195,27 @@ function DemoBottomNav({ pathname }: { pathname: string }) {
         <DemoProtectedButton
           actionDescription="přidání úlovku"
           variant="default"
-          className="flex flex-col items-center justify-center gap-1 h-14 w-14 rounded-full -mt-4 shadow-lg bg-accent hover:bg-accent/90"
+          className="flex flex-col items-center justify-center h-12 w-12 rounded-full -mt-3 shadow-lg bg-accent hover:bg-accent/90"
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-5 w-5" />
         </DemoProtectedButton>
 
         {/* Last two nav items */}
         {items.slice(2).map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href
-          
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-3 py-2 min-w-[64px]",
+                "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 max-w-[72px]",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-xs">{item.label}</span>
+              <span className="text-[10px] font-medium">{item.label}</span>
             </Link>
           )
         })}

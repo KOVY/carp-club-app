@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { HeaderWrapper } from './HeaderWrapper'
+import { MobileHeader } from './MobileHeader'
 import { Footer } from './Footer'
 import { GlobalBottomNavigation } from './GlobalBottomNavigation'
 
@@ -24,13 +25,27 @@ export function RootLayoutClient({ children }: RootLayoutClientProps) {
   }
 
   // For public pages (landing, archiv), render the full layout
-  // On landing page, hide header on mobile to avoid duplicate navigation (BottomNav has login)
   return (
     <>
-      {/* Header: hidden on mobile for landing page (has HeroSection + BottomNav) */}
-      <div className={isLandingPage ? 'hidden md:block' : ''}>
-        <HeaderWrapper />
+      {/* Desktop: Floating header with spacing */}
+      <div className="hidden md:block">
+        <HeaderWrapper floating />
       </div>
+
+      {/* Mobile landing: Minimal header with hamburger menu */}
+      {isLandingPage && (
+        <div className="md:hidden">
+          <MobileHeader />
+        </div>
+      )}
+
+      {/* Mobile other pages: Full header */}
+      {!isLandingPage && (
+        <div className="md:hidden">
+          <HeaderWrapper />
+        </div>
+      )}
+
       <main className="flex-1 pb-16 md:pb-0">
         {children}
       </main>

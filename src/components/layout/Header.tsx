@@ -18,6 +18,8 @@ interface User {
 interface HeaderProps {
   user?: User | null
   onSignOut?: () => void
+  /** Enable floating mode with margins and rounded corners */
+  floating?: boolean
 }
 
 interface NavItem {
@@ -33,7 +35,7 @@ const navItems: NavItem[] = [
   { href: "/archiv", label: "Archiv" },
 ]
 
-export function Header({ user, onSignOut }: HeaderProps) {
+export function Header({ user, onSignOut, floating }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -92,13 +94,19 @@ export function Header({ user, onSignOut }: HeaderProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b transition-all duration-200",
+        "sticky z-50 w-full transition-all duration-200",
+        floating
+          ? "top-4 mx-4 rounded-2xl border shadow-lg"
+          : "top-0 border-b",
         isScrolled
           ? "bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 shadow-sm"
           : "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
       )}
     >
-      <div className="container flex h-14 items-center justify-between">
+      <div className={cn(
+        "flex h-14 items-center justify-between",
+        floating ? "px-6" : "container"
+      )}>
         {/* Left side - Logo */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center space-x-2 mr-8">

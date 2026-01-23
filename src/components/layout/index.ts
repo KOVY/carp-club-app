@@ -1,5 +1,6 @@
 export { Header } from './Header'
 export { HeaderWrapper } from './HeaderWrapper'
+export { MobileHeader } from './MobileHeader'
 export { MobileMenu } from './MobileMenu'
 export { Footer } from './Footer'
 export { BottomNavigation } from './BottomNavigation'
