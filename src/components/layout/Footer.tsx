@@ -25,7 +25,7 @@ export function Footer({ className }: FooterProps) {
           <div className="space-y-3">
             <h4 className="text-sm font-semibold">Navigace</h4>
             <nav className="flex flex-col space-y-2 text-sm text-muted-foreground">
-              <Link href="/" className="hover:text-foreground transition-colors">
+              <Link href="/#zavody" className="hover:text-foreground transition-colors">
                 Aktuální závody
               </Link>
               <Link href="/archiv" className="hover:text-foreground transition-colors">

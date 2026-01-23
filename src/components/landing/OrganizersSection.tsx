@@ -118,10 +118,10 @@ export function OrganizersSection() {
                 size="lg"
                 className="hover-glow hover-scale bg-accent hover:bg-accent/90"
               >
-                <Link href="/kontakt">
+                <a href="mailto:prorybolov@gmail.com">
                   Kontaktujte nás
                   <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
+                </a>
               </Button>
               <Button
                 asChild
