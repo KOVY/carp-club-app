@@ -123,6 +123,10 @@ export interface CreateZavodInput {
   min_vaha_kg?: number;
   top_n_ryb?: number;
   pocet_potvrzeni?: number;
+  // Map coordinates
+  map_lat?: number;
+  map_lng?: number;
+  map_location_name?: string;
 }
 
 export interface UpdateZavodInput {

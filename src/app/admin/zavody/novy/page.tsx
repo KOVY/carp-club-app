@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Calendar, MapPin, FileText, Save, Loader2, Settings } from "lucide-react"
+import { ArrowLeft, Calendar, MapPin, FileText, Save, Loader2, Settings, Map } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createZavodAsAdmin, getSouteze } from "@/actions/hlavni-admin.actions"
+import { LocationSearch, PegMap } from "@/components/maps"
 
 interface Soutez {
   id: string
@@ -43,6 +44,13 @@ export default function NovyZavodPage() {
     top_n_ryb: "5",
     pocet_potvrzeni: "2",
   })
+
+  // Map location state
+  const [mapLocation, setMapLocation] = useState<{
+    lat: number
+    lng: number
+    name: string
+  } | null>(null)
 
   useEffect(() => {
     const fetchSouteze = async () => {
@@ -88,7 +96,7 @@ export default function NovyZavodPage() {
 
     const result = await createZavodAsAdmin({
       nazev: formData.nazev.trim(),
-      misto: formData.misto.trim() || undefined,
+      misto: formData.misto.trim() || mapLocation?.name || undefined,
       datum_start: formData.datum_start,
       datum_end: formData.datum_end,
       embargo_od: formData.embargo_od || undefined,
@@ -97,6 +105,10 @@ export default function NovyZavodPage() {
       min_vaha_kg: parseFloat(formData.min_vaha_kg) || 5,
       top_n_ryb: parseInt(formData.top_n_ryb) || 5,
       pocet_potvrzeni: parseInt(formData.pocet_potvrzeni) || 2,
+      // Map coordinates
+      map_lat: mapLocation?.lat,
+      map_lng: mapLocation?.lng,
+      map_location_name: mapLocation?.name,
     })
 
     if (result.success && result.data) {
@@ -193,6 +205,66 @@ export default function NovyZavodPage() {
                     </SelectContent>
                   </Select>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Lokace na mapě */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Map className="h-5 w-5" />
+                Lokace na mapě
+              </CardTitle>
+              <CardDescription>
+                Vyhledejte rybník nebo jezero pro zobrazení na mapě
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <LocationSearch
+                onLocationSelect={(location) => {
+                  setMapLocation(location)
+                  // Auto-fill misto field if empty
+                  if (!formData.misto) {
+                    handleChange("misto", location.name)
+                  }
+                }}
+                placeholder="Hledat rybník, jezero..."
+              />
+
+              {mapLocation && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{mapLocation.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {mapLocation.lat.toFixed(6)}, {mapLocation.lng.toFixed(6)}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMapLocation(null)}
+                    >
+                      Zrušit
+                    </Button>
+                  </div>
+                  <PegMap
+                    center={{ lat: mapLocation.lat, lng: mapLocation.lng }}
+                    zoom={15}
+                    pegs={[]}
+                    editable={false}
+                    height="200px"
+                    satellite={true}
+                  />
+                </div>
+              )}
+
+              {!mapLocation && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Lokace zatím není vybrána. Mapa se zobrazí po vyhledání místa.
+                </p>
               )}
             </CardContent>
           </Card>

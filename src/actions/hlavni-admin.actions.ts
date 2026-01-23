@@ -288,6 +288,10 @@ export async function createZavodAsAdmin(input: CreateZavodInput): Promise<Actio
       min_vaha_kg: input.min_vaha_kg ?? 5,
       top_n_ryb: input.top_n_ryb ?? 5,
       pocet_potvrzeni: input.pocet_potvrzeni ?? 2,
+      // Map coordinates
+      map_lat: input.map_lat || null,
+      map_lng: input.map_lng || null,
+      map_location_name: input.map_location_name || null,
     }
 
     const { data: zavodData, error: insertError } = await adminClient
