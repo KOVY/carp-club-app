@@ -15,9 +15,27 @@ import { createClient } from "@/lib/supabase/server"
 import { GlassCard, GlassCardContent, GlassCardDescription, GlassCardHeader, GlassCardTitle } from "@/components/ui/GlassCard"
 import { DataDisplay } from "@/components/ui/DataDisplay"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
-import { CompactLeaderboard, CompactBiggestFish, AddCatchButton } from "@/components/zavod"
+import { CompactLeaderboard, CompactBiggestFish, AddCatchButton, MapaPravidla } from "@/components/zavod"
 import { getLeaderboard, getNejvetsiRyby } from "@/actions/leaderboard.actions"
 import type { Zavod, UserRole } from "@/lib/types"
+
+// Extended Zavod type with map fields
+interface ZavodWithMap extends Zavod {
+  map_lat?: number | null
+  map_lng?: number | null
+  map_zoom?: number | null
+  map_location_name?: string | null
+}
+
+// Team type with peg coordinates
+interface TymWithPeg {
+  id: string
+  nazev: string
+  barva: string | null
+  peg_cislo: number | null
+  peg_lat: number | null
+  peg_lng: number | null
+}
 
 interface ZavodPageProps {
   params: Promise<{ zavodId: string }>
@@ -38,14 +56,23 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
     notFound()
   }
 
-  const zavodData = zavod as Zavod
+  const zavodData = zavod as ZavodWithMap
+
+  // Fetch all teams with peg coordinates for the map
+  const { data: allTeams } = await supabase
+    .from('tymy')
+    .select('id, nazev, barva, peg_cislo, peg_lat, peg_lng')
+    .eq('zavod_id', zavodId)
+    .order('peg_cislo', { ascending: true })
+
+  const tymyForMap = (allTeams || []) as TymWithPeg[]
 
   // Fetch current user and their info
   const { data: { user } } = await supabase.auth.getUser()
 
   let userProfile: { jmeno: string; telefon: string | null } | null = null
   let userRole: UserRole | null = null
-  let userTeam: { id: string; nazev: string; barva: string; peg: number | null } | null = null
+  let userTeam: { id: string; nazev: string; barva: string; peg_cislo: number | null } | null = null
 
   if (user) {
     // Fetch user profile
@@ -91,12 +118,12 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
         // Get team details
         const { data: teamData } = await supabase
           .from('tymy')
-          .select('id, nazev, barva, peg')
+          .select('id, nazev, barva, peg_cislo')
           .eq('id', membership.tym_id)
           .single()
 
         if (teamData) {
-          userTeam = teamData as { id: string; nazev: string; barva: string; peg: number | null }
+          userTeam = teamData as { id: string; nazev: string; barva: string; peg_cislo: number | null }
         }
       }
     }
@@ -239,8 +266,8 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
                           style={{ backgroundColor: userTeam.barva }}
                         />
                         <span>{userTeam.nazev}</span>
-                        {userTeam.peg && (
-                          <span className="text-muted-foreground">• Peg {userTeam.peg}</span>
+                        {userTeam.peg_cislo && (
+                          <span className="text-muted-foreground">• Peg {userTeam.peg_cislo}</span>
                         )}
                       </span>
                     )}
@@ -410,6 +437,16 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
           </div>
         </GlassCardContent>
       </GlassCard>
+
+      {/* Map and Rules - show if map is configured or rules exist */}
+      {(zavodData.map_lat || zavodData.pravidla) && (
+        <MapaPravidla
+          zavod={zavodData}
+          tymy={tymyForMap}
+          userTymId={userTeam?.id}
+          userPegCislo={userTeam?.peg_cislo}
+        />
+      )}
     </div>
   )
 }

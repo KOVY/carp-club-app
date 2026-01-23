@@ -14,3 +14,4 @@ export {
 } from './DemoLoginPrompt'
 export { AddCatchButton } from './AddCatchButton'
 export { TymoveUlovkyList } from './TymoveUlovkyList'
+export { MapaPravidla } from './MapaPravidla'
