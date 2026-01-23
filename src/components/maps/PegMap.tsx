@@ -1,9 +1,13 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api"
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Libraries } from "@react-google-maps/api"
 import { MapPin, Loader2, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+// IMPORTANT: This must be defined outside component and match LocationSearch.tsx
+// to prevent "Loader must not be called again with different options" error
+const libraries: Libraries = ["places"]
 
 export interface PegLocation {
   id: string
@@ -72,6 +76,7 @@ export function PegMap({
 }: PegMapProps) {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    libraries,
     language: "cs",
     region: "CZ",
   })
