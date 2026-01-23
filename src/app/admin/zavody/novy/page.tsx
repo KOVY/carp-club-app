@@ -119,9 +119,20 @@ export default function NovyZavodPage() {
     }
   }
 
-  // Vypočti výchozí hodnoty pro datumy
-  const today = new Date().toISOString().split('T')[0]
-  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  // Helper pro lokální datetime formát (YYYY-MM-DDTHH:mm)
+  const toLocalDatetimeString = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  }
+
+  // Vypočti výchozí hodnoty pro datumy v lokálním čase
+  const now = new Date()
+  const todayDatetime = toLocalDatetimeString(now)
+  const todayDate = todayDatetime.split('T')[0]
 
   return (
     <div className="space-y-6">
@@ -289,9 +300,14 @@ export default function NovyZavodPage() {
                     type="datetime-local"
                     value={formData.datum_start}
                     onChange={(e) => handleChange("datum_start", e.target.value)}
-                    min={today}
+                    min={todayDate}
                     required
                   />
+                  {formData.datum_start && (
+                    <p className="text-xs text-muted-foreground">
+                      Vybráno: {new Date(formData.datum_start).toLocaleString('cs-CZ')}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -301,9 +317,14 @@ export default function NovyZavodPage() {
                     type="datetime-local"
                     value={formData.datum_end}
                     onChange={(e) => handleChange("datum_end", e.target.value)}
-                    min={formData.datum_start || today}
+                    min={formData.datum_start || todayDate}
                     required
                   />
+                  {formData.datum_end && (
+                    <p className="text-xs text-muted-foreground">
+                      Vybráno: {new Date(formData.datum_end).toLocaleString('cs-CZ')}
+                    </p>
+                  )}
                 </div>
               </div>
 

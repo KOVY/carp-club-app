@@ -57,51 +57,16 @@ export async function getUserRoleInZavod(zavodId: string): Promise<ActionResult<
       .eq('zavod_id', zavodId)
       .single()
 
-    if (zavodRole) {
-      // Get team membership if exists
-      const { data: teams } = await adminClient
-        .from('tymy')
-        .select('id, nazev, barva')
-        .eq('zavod_id', zavodId)
-
-      if (teams && teams.length > 0) {
-        const teamsData = teams as { id: string; nazev: string; barva: string | null }[]
-        const teamIds = teamsData.map(t => t.id)
-        const { data: membership } = await adminClient
-          .from('clenove_tymu')
-          .select('tym_id')
-          .eq('user_id', user.id)
-          .in('tym_id', teamIds)
-          .single()
-
-        if (membership) {
-          const userTeam = teamsData.find(t => t.id === (membership as { tym_id: string }).tym_id)
-          return {
-            success: true,
-            data: {
-              role: (zavodRole as { role: UserRole }).role,
-              tymId: (membership as { tym_id: string }).tym_id,
-              tymNazev: userTeam?.nazev || null,
-              tymBarva: userTeam?.barva || null
-            }
-          }
-        }
-      }
-
-      return { success: true, data: { role: (zavodRole as { role: UserRole }).role, tymId: null, tymNazev: null, tymBarva: null } }
-    }
-
-    // Check team membership via invitation
+    // Get all teams in zavod
     const { data: teams } = await adminClient
       .from('tymy')
       .select('id, nazev, barva')
       .eq('zavod_id', zavodId)
 
+    // Check team membership first - team role (kapitan) takes precedence for confirmations
     if (teams && teams.length > 0) {
       const teamsData = teams as { id: string; nazev: string; barva: string | null }[]
       const teamIds = teamsData.map(t => t.id)
-
-      // Check direct membership
       const { data: membership } = await adminClient
         .from('clenove_tymu')
         .select('tym_id, role')
@@ -110,19 +75,37 @@ export async function getUserRoleInZavod(zavodId: string): Promise<ActionResult<
         .single()
 
       if (membership) {
-        const userTeam = teamsData.find(t => t.id === (membership as { tym_id: string }).tym_id)
+        const membershipData = membership as { tym_id: string; role: UserRole }
+        const userTeam = teamsData.find(t => t.id === membershipData.tym_id)
+
+        // If user is a team member, prefer their team role (kapitan/zavodnik)
+        // unless they have a special role (rozhodci/poradatel) in zavod_role
+        const zavodRoleData = zavodRole as { role: UserRole } | null
+        const effectiveRole = zavodRoleData && ['rozhodci', 'poradatel', 'hlavni_admin'].includes(zavodRoleData.role)
+          ? zavodRoleData.role
+          : membershipData.role
+
         return {
           success: true,
           data: {
-            role: (membership as { role: UserRole }).role,
-            tymId: (membership as { tym_id: string }).tym_id,
+            role: effectiveRole,
+            tymId: membershipData.tym_id,
             tymNazev: userTeam?.nazev || null,
             tymBarva: userTeam?.barva || null
           }
         }
       }
+    }
 
-      // Check via invitation
+    // If user has zavod_role but no team membership
+    if (zavodRole) {
+      return { success: true, data: { role: (zavodRole as { role: UserRole }).role, tymId: null, tymNazev: null, tymBarva: null } }
+    }
+
+    // Check via invitation if no direct membership found
+    if (teams && teams.length > 0) {
+      const teamsData = teams as { id: string; nazev: string; barva: string | null }[]
+
       const { data: profileData } = await adminClient
         .from('profiles')
         .select('email')
