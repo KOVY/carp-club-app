@@ -23,9 +23,10 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { Loading } from "@/components/common/Loading"
 import { ErrorState } from "@/components/common/ErrorState"
-import { updateZavod, setEmbargo } from "@/actions/admin.actions"
+import { MapSettings } from "@/components/admin"
+import { updateZavod, setEmbargo, getTeamsByZavod } from "@/actions/admin.actions"
 import { createClient } from "@/lib/supabase/client"
-import type { Zavod, UserRole, StavZavodu } from "@/lib/types"
+import type { Zavod, Tym, UserRole, StavZavodu } from "@/lib/types"
 
 interface AdminNastaveniPageProps {
   params: Promise<{ zavodId: string }>
@@ -41,6 +42,7 @@ interface AdminNastaveniPageProps {
 export default function AdminNastaveniPage({ params }: AdminNastaveniPageProps) {
   const [zavodId, setZavodId] = useState<string | null>(null)
   const [zavod, setZavod] = useState<Zavod | null>(null)
+  const [tymy, setTymy] = useState<Tym[]>([])
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -101,12 +103,14 @@ export default function AdminNastaveniPage({ params }: AdminNastaveniPageProps) 
     checkRole()
   }, [zavodId, router, toast])
 
-  // Fetch zavod data
+  // Fetch zavod data and teams
   const fetchZavod = useCallback(async () => {
     if (!zavodId || !userRole) return
 
     try {
       const supabase = createClient()
+
+      // Fetch zavod data
       const { data, error: fetchError } = await supabase
         .from('zavody')
         .select('*')
@@ -120,7 +124,7 @@ export default function AdminNastaveniPage({ params }: AdminNastaveniPageProps) 
 
       const zavodData = data as Zavod
       setZavod(zavodData)
-      
+
       // Initialize form with current values
       setFormData({
         nazev: zavodData.nazev || "",
@@ -131,6 +135,12 @@ export default function AdminNastaveniPage({ params }: AdminNastaveniPageProps) 
         pravidla: zavodData.pravidla || "",
         stav: zavodData.stav as StavZavodu,
       })
+
+      // Fetch teams for map
+      const teamsResult = await getTeamsByZavod(zavodId)
+      if (teamsResult.success && teamsResult.data) {
+        setTymy(teamsResult.data.tymy)
+      }
 
       setError(null)
     } catch (err) {
@@ -505,6 +515,15 @@ export default function AdminNastaveniPage({ params }: AdminNastaveniPageProps) 
           </CardContent>
         </Card>
       </div>
+
+      {/* Map Settings */}
+      {zavod && (
+        <MapSettings
+          zavod={zavod}
+          tymy={tymy}
+          onUpdate={fetchZavod}
+        />
+      )}
 
       {/* Save button at bottom for mobile */}
       <div className="md:hidden">
