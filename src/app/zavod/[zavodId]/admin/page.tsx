@@ -34,6 +34,7 @@ import { ZlutaKartaDialog, YellowCardBadge } from "@/components/zavod/ZlutaKarta
 import { getPendingPotvrzeni } from "@/actions/potvrzeni.actions"
 import { potvrditUlovek } from "@/actions/potvrzeni.actions"
 import { getTeamsByZavod, getZluteKartyByTym } from "@/actions/admin.actions"
+import { getUserRoleInZavod } from "@/actions/ulovky.actions"
 import { createClient } from "@/lib/supabase/client"
 import type { UlovekWithRelations, Tym, TymWithRelations, UserRole } from "@/lib/types"
 
@@ -76,21 +77,27 @@ export default function AdminPage({ params }: AdminPageProps) {
     const checkRole = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (!user) {
         router.push(`/zavod/${zavodId}`)
         return
       }
 
-      const { data: roleData } = await supabase
-        .from('zavod_role')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('zavod_id', zavodId)
-        .single()
+      // Use server action to bypass RLS
+      const roleResult = await getUserRoleInZavod(zavodId)
 
-      const role = (roleData as { role: string } | null)?.role
-      if (!role || !['rozhodci', 'poradatel'].includes(role)) {
+      if (!roleResult.success || !roleResult.data?.role) {
+        toast({
+          title: "Přístup odepřen",
+          description: "Nemáte oprávnění pro přístup k této stránce",
+          variant: "destructive",
+        })
+        router.push(`/zavod/${zavodId}`)
+        return
+      }
+
+      const role = roleResult.data.role
+      if (!['rozhodci', 'poradatel'].includes(role)) {
         toast({
           title: "Přístup odepřen",
           description: "Nemáte oprávnění pro přístup k této stránce",

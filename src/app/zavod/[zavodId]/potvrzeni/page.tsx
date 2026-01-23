@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Loading } from "@/components/common/Loading"
 import { ErrorState } from "@/components/common/ErrorState"
 import { getPendingPotvrzeni, potvrditUlovek } from "@/actions/potvrzeni.actions"
+import { getUserRoleInZavod } from "@/actions/ulovky.actions"
 import { createClient } from "@/lib/supabase/client"
 import type { UlovekWithRelations, UserRole } from "@/lib/types"
 import Link from "next/link"
@@ -73,15 +74,15 @@ export default function PotvrzeniPage({ params }: PotvrzeniPageProps) {
         return
       }
 
-      // Zkontrolovat zavod_role
-      const { data: roleData } = await supabase
-        .from('zavod_role')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('zavod_id', zavodId)
-        .single()
+      // Use server action to bypass RLS
+      const roleResult = await getUserRoleInZavod(zavodId)
 
-      const role = (roleData as { role: string } | null)?.role as UserRole | null
+      if (!roleResult.success) {
+        setUserRole('divak')
+        return
+      }
+
+      const role = roleResult.data?.role as UserRole | null
 
       // Rozhodčí a pořadatelé mají přístup na /admin
       if (role && ['rozhodci', 'poradatel'].includes(role)) {
@@ -89,36 +90,24 @@ export default function PotvrzeniPage({ params }: PotvrzeniPageProps) {
         return
       }
 
-      // Získat peg uživatele (pokud je v týmu)
-      const { data: teamsData } = await supabase
-        .from('tymy')
-        .select('id, peg_cislo')
-        .eq('zavod_id', zavodId)
-
-      const teams = teamsData as Array<{ id: string; peg_cislo: number | null }> | null
-
-      if (teams && teams.length > 0) {
-        const teamIds = teams.map(t => t.id)
-        const { data: membership } = await supabase
-          .from('clenove_tymu')
-          .select('tym_id, role')
-          .eq('user_id', user.id)
-          .in('tym_id', teamIds)
-          .single()
-
-        if (membership) {
-          const membershipData = membership as { tym_id: string; role: string }
-          const userTeam = teams.find(t => t.id === membershipData.tym_id)
-          setUserPeg(userTeam?.peg_cislo ?? null)
-          setUserRole(membershipData.role as UserRole)
-        }
+      // Set user role and peg from server action result
+      if (role) {
+        setUserRole(role)
+      } else {
+        setUserRole('divak')
       }
 
-      // Pokud nemá roli, může stále vidět stránku (ale bez potvrzování)
-      if (!role) {
-        setUserRole('divak')
-      } else {
-        setUserRole(role)
+      // Get user's peg number if they're in a team
+      if (roleResult.data?.tymId) {
+        const { data: teamData } = await supabase
+          .from('tymy')
+          .select('peg_cislo')
+          .eq('id', roleResult.data.tymId)
+          .single()
+
+        if (teamData) {
+          setUserPeg((teamData as { peg_cislo: number | null }).peg_cislo)
+        }
       }
     }
 

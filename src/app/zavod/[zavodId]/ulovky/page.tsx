@@ -175,9 +175,9 @@ export default function UlovkyPage() {
     fetchData()
   }
 
-  // Závodníci a kapitáni mohou přidávat úlovky, rozhodčí a pořadatelé také
-  const canSubmitCatch = userRole === 'zavodnik' || userRole === 'kapitan' || userRole === 'rozhodci' || userRole === 'poradatel'
-  // Pouze kapitáni, rozhodčí a pořadatelé mohou potvrzovat úlovky sousedních týmů
+  // Závodníci a kapitáni mohou přidávat úlovky (musí mít tým)
+  const canSubmitCatch = (userRole === 'zavodnik' || userRole === 'kapitan') && userTymId !== null
+  // Kapitáni, rozhodčí a pořadatelé mohou potvrzovat úlovky
   const canConfirmCatch = userRole === 'kapitan' || userRole === 'rozhodci' || userRole === 'poradatel'
 
   // Check if stopka is currently active
