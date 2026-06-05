@@ -15,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher"
 import { createClient } from "@/lib/supabase/client"
-import { isSystemAdmin } from "@/lib/constants"
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -66,40 +65,35 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       let isHlavniAdmin = false
 
-      // Centralized system admin check first
-      if (isSystemAdmin(authUser.id)) {
+      // Check system_admins via SECURITY DEFINER RPC (server-side; hardcoded klientský check odstraněn —
+      // process.env.SYSTEM_ADMIN_IDS není na klientu dostupné, RPC is_system_admin je rozhodující)
+      const { data: systemAdmin, error: sysAdminError } = await (supabase as any).rpc('is_system_admin', { p_user_id: authUser.id })
+
+      console.log('[AdminLayout] system_admins check:', { systemAdmin, error: sysAdminError?.message })
+
+      if (systemAdmin === true) {
+        // User is a system admin - has full access
         console.log('[AdminLayout] User is system admin!')
         isHlavniAdmin = true
       } else {
-        // First check system_admins via SECURITY DEFINER RPC (po migraci 016 už není přímý SELECT povolen)
-        const { data: systemAdmin, error: sysAdminError } = await (supabase as any).rpc('is_system_admin', { p_user_id: authUser.id })
+        // Check zavod_role table
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('zavod_role')
+          .select('role')
+          .eq('user_id', authUser.id)
+          .in('role', ['hlavni_admin', 'poradatel'])
 
-        console.log('[AdminLayout] system_admins check:', { systemAdmin, error: sysAdminError?.message })
+        console.log('[AdminLayout] zavod_role check:', { rolesData, error: rolesError?.message })
 
-        if (systemAdmin === true) {
-          // User is a system admin - has full access
-          console.log('[AdminLayout] User is system admin!')
-          isHlavniAdmin = true
-        } else {
-          // Check zavod_role table
-          const { data: rolesData, error: rolesError } = await supabase
-            .from('zavod_role')
-            .select('role')
-            .eq('user_id', authUser.id)
-            .in('role', ['hlavni_admin', 'poradatel'])
+        const roles = rolesData as Array<{ role: string }> | null
 
-          console.log('[AdminLayout] zavod_role check:', { rolesData, error: rolesError?.message })
-
-          const roles = rolesData as Array<{ role: string }> | null
-
-          if (!roles || roles.length === 0) {
-            console.log('[AdminLayout] No admin roles found, redirecting to /')
-            router.push('/')
-            return
-          }
-
-          isHlavniAdmin = roles.some(r => r.role === 'hlavni_admin')
+        if (!roles || roles.length === 0) {
+          console.log('[AdminLayout] No admin roles found, redirecting to /')
+          router.push('/')
+          return
         }
+
+        isHlavniAdmin = roles.some(r => r.role === 'hlavni_admin')
       }
 
       setUser({

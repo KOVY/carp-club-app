@@ -2,18 +2,20 @@
 // These values are configurable per competition but have sensible defaults
 
 /**
- * System admin user IDs - centralized for security
- * These users have full access to all features
+ * System admin user IDs — ze server-only env proměnné SYSTEM_ADMIN_IDS
+ * (comma-separated UUID). Na klientu je prázdné (env je server-only);
+ * klientská místa se spoléhají na is_system_admin() RPC.
  */
-export const SYSTEM_ADMIN_IDS = [
-  'adfa3aa5-9e63-4a0b-8dac-f1f5911bcf25' // prorybolov@gmail.com
-] as const;
+export const SYSTEM_ADMIN_IDS: readonly string[] = (process.env.SYSTEM_ADMIN_IDS ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
 
 /**
- * Check if a user ID is a system admin
+ * Check if a user ID is a system admin (server-side; na klientu vždy false)
  */
 export function isSystemAdmin(userId: string): boolean {
-  return SYSTEM_ADMIN_IDS.includes(userId as typeof SYSTEM_ADMIN_IDS[number]);
+  return SYSTEM_ADMIN_IDS.includes(userId)
 }
 
 /**
