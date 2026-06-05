@@ -47,6 +47,7 @@ export const ErrorCodes = {
   ULOVEK_NOT_FOUND: 'ULOVEK_NOT_FOUND',
   PEG_ALREADY_ASSIGNED: 'PEG_ALREADY_ASSIGNED',
   USER_NOT_IN_TEAM: 'USER_NOT_IN_TEAM',
+  STOPKA_ACTIVE: 'STOPKA_ACTIVE',
   
   // System errors
   DATABASE_ERROR: 'DATABASE_ERROR',
@@ -87,6 +88,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   [ErrorCodes.ULOVEK_NOT_FOUND]: 'Úlovek nebyl nalezen',
   [ErrorCodes.PEG_ALREADY_ASSIGNED]: 'Peg je již přiřazen jinému týmu',
   [ErrorCodes.USER_NOT_IN_TEAM]: 'Uživatel není členem týmu',
+  [ErrorCodes.STOPKA_ACTIVE]: 'Tým má aktivní stopku, úlovek nelze zadat',
   
   // System
   [ErrorCodes.DATABASE_ERROR]: 'Chyba databáze',
