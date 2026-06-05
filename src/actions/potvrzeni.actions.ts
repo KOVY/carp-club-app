@@ -174,6 +174,18 @@ export async function potvrditUlovek(input: PotvrzeniInput): Promise<ActionResul
       }
     }
 
+    // Tým bez přiděleného pegu může potvrdit jen rozhodčí/pořadatel (jinak by ho potvrdil kdokoli)
+    const jeRozhodci = permissionCtx.role === 'rozhodci' || permissionCtx.role === 'poradatel' || permissionCtx.role === 'hlavni_admin'
+    if (ulovekTymPeg === null && !jeRozhodci) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCodes.NOT_NEIGHBOR_PEG,
+          message: ErrorMessages[ErrorCodes.NOT_NEIGHBOR_PEG],
+        },
+      }
+    }
+
     // Check if user can confirm this catch (neighbor peg or rozhodci/poradatel)
     if (ulovekTymPeg !== null && !canConfirmUlovek(permissionCtx, ulovekTymPeg)) {
       return {
