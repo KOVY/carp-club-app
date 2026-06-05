@@ -455,19 +455,8 @@ export async function getPendingPotvrzeni(
       }
     }
 
-    // Get user's peg number
-    const userTeam = teamsData.find(t => t.id === membershipData.tym_id)
-    if (!userTeam || userTeam.peg_cislo === null) {
-      return {
-        success: true,
-        data: { ulovky: [] },
-      }
-    }
-
-    const userPeg = userTeam.peg_cislo
-
-    // Filter to only neighbor pegs (peg ± 1) and exclude own team
-    // Also exclude catches user has already confirmed
+    // Filter to all other teams' catches (Fáze 3b: libovolný tým může potvrdit)
+    // Exclude own team and catches already confirmed by this team
     filteredUlovky = filteredUlovky.filter(u => {
       // Exclude own team's catches (self-confirmation prevention)
       if (u.tym_id === membershipData.tym_id) {
@@ -482,14 +471,7 @@ export async function getPendingPotvrzeni(
         return false
       }
 
-      // Check if catch is from neighbor peg
-      const catchTeam = teamsData.find(t => t.id === u.tym_id)
-      if (!catchTeam || catchTeam.peg_cislo === null) {
-        return false
-      }
-
-      const pegDiff = Math.abs(catchTeam.peg_cislo - userPeg)
-      return pegDiff === 1
+      return true
     })
 
     return {
