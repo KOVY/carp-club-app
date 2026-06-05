@@ -51,8 +51,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       if (authError) console.error('[AdminLayout] Auth check failed:', authError.message)
 
       if (!authUser) {
-        console.log('[AdminLayout] No auth user, redirecting to login')
-        router.push('/admin/login')
+        router.push('/login?returnTo=/admin')
         return
       }
 
