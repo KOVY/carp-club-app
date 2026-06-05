@@ -36,6 +36,9 @@ export const ErrorCodes = {
   INVALID_ROLE: 'INVALID_ROLE',
   
   // Business logic errors
+  NOT_FOUND: 'NOT_FOUND',
+  CAPACITY_FULL: 'CAPACITY_FULL',
+  ALREADY_REGISTERED: 'ALREADY_REGISTERED',
   ALREADY_CONFIRMED: 'ALREADY_CONFIRMED',
   TEAM_DISQUALIFIED: 'TEAM_DISQUALIFIED',
   ZAVOD_NOT_ACTIVE: 'ZAVOD_NOT_ACTIVE',
@@ -73,6 +76,9 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   [ErrorCodes.INVALID_ROLE]: 'Neplatná role uživatele',
   
   // Business logic
+  [ErrorCodes.NOT_FOUND]: 'Záznam nenalezen',
+  [ErrorCodes.CAPACITY_FULL]: 'Kapacita závodu je naplněná',
+  [ErrorCodes.ALREADY_REGISTERED]: 'Na tento závod už jsi přihlášený',
   [ErrorCodes.ALREADY_CONFIRMED]: 'Úlovek již byl potvrzen',
   [ErrorCodes.TEAM_DISQUALIFIED]: 'Tým byl diskvalifikován',
   [ErrorCodes.ZAVOD_NOT_ACTIVE]: 'Závod není aktivní',
