@@ -19,8 +19,10 @@ CREATE INDEX IF NOT EXISTS idx_prihlasky_zavod ON prihlasky(zavod_id);
 CREATE INDEX IF NOT EXISTS idx_prihlasky_kapitan ON prihlasky(kapitan_user_id);
 
 ALTER TABLE prihlasky ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Prihlasky viewable by everyone" ON prihlasky FOR SELECT USING (true);
-CREATE POLICY "User can insert own prihlaska" ON prihlasky
-  FOR INSERT TO authenticated WITH CHECK (kapitan_user_id = auth.uid());
-CREATE POLICY "User can update own prihlaska" ON prihlasky
-  FOR UPDATE TO authenticated USING (kapitan_user_id = auth.uid());
+-- ŽÁDNÉ policies pro anon/authenticated → výchozí DENY (RLS bez policy nepustí nikoho
+-- kromě service role). Veškerý přístup (čtení i zápis) jde přes service role v
+-- src/actions/prihlasky.actions.ts s vlastní autorizační logikou (vlastnictví přihlášky
+-- u rybáře / scope pořadatele konkrétního závodu). Tím je z klientského klíče znemožněno:
+--   • self-schválení (změna stav→'schvaleno' nebo tym_id přímým UPDATE),
+--   • insert-time escalation (vložení cizí nebo rovnou schválené přihlášky),
+--   • únik PII (jména členů v 'clenove' nejsou veřejně čitelná přes anon klíč).
