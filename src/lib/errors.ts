@@ -22,6 +22,7 @@ export class AppError extends Error {
  */
 export const ErrorCodes = {
   // Validation errors
+  INVALID_INPUT: 'INVALID_INPUT',
   INVALID_WEIGHT: 'INVALID_WEIGHT',
   MISSING_PHOTO: 'MISSING_PHOTO',
   OUTSIDE_TIME_WINDOW: 'OUTSIDE_TIME_WINDOW',
@@ -58,6 +59,7 @@ export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
  */
 export const ErrorMessages: Record<ErrorCode, string> = {
   // Validation
+  [ErrorCodes.INVALID_INPUT]: 'Neplatný vstup',
   [ErrorCodes.INVALID_WEIGHT]: 'Minimální váha ryby je 5 kg',
   [ErrorCodes.MISSING_PHOTO]: 'Fotografie je povinná',
   [ErrorCodes.OUTSIDE_TIME_WINDOW]: 'Závod neprobíhá',

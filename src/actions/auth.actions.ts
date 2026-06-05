@@ -11,10 +11,13 @@
  * - getUserRole(): Get user's role in a specific zavod
  */
 
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import type { ActionResult, UserRole, ZavodRole, Tym, ClenTymu } from '@/lib/types'
+import { validateEmail, validatePassword, validateJmeno } from '@/lib/validators/auth'
+import { isSystemAdmin } from '@/lib/constants'
 
 /**
  * Generate a one-time login code and send it to the user's email
@@ -343,7 +346,7 @@ export async function signInWithPassword(
 export async function signOut(): Promise<ActionResult> {
   try {
     const supabase = await createClient()
-    
+
     const { error } = await supabase.auth.signOut()
 
     if (error) {
@@ -364,5 +367,86 @@ export async function signOut(): Promise<ActionResult> {
       success: false,
       error: toErrorResponse(error),
     }
+  }
+}
+
+/** Registrace email+heslo. Bez email confirm → rovnou session. Profil založí DB trigger. */
+export async function signUpWithPassword(input: {
+  jmeno: string; email: string; heslo: string; termsAccepted: boolean
+}): Promise<ActionResult<{ userId: string }>> {
+  try {
+    if (!input.termsAccepted) return { success: false, error: { code: ErrorCodes.INVALID_INPUT, message: 'Musíš souhlasit s podmínkami' } }
+    for (const v of [validateJmeno(input.jmeno), validateEmail(input.email), validatePassword(input.heslo)]) {
+      if (!v.ok) return { success: false, error: { code: ErrorCodes.INVALID_INPUT, message: v.reason } }
+    }
+    const supabase = await createClient()
+    const { data, error } = await supabase.auth.signUp({
+      email: input.email,
+      password: input.heslo,
+      options: { data: { jmeno: input.jmeno.trim(), terms_accepted: 'true' } },
+    })
+    if (error) return { success: false, error: { code: ErrorCodes.DATABASE_ERROR, message: error.message } }
+    return { success: true, data: { userId: data.user!.id } }
+  } catch (e) {
+    return { success: false, error: toErrorResponse(e) }
+  }
+}
+
+/** Vrátí URL pro přesměrování na Google OAuth (redirect dělá klient). */
+export async function signInWithGoogle(redirectPath: string = '/'): Promise<ActionResult<{ url: string }>> {
+  try {
+    const supabase = await createClient()
+    const origin = (await headers()).get('origin') ?? ''
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectPath)}` },
+    })
+    if (error || !data?.url) return { success: false, error: { code: ErrorCodes.DATABASE_ERROR, message: error?.message ?? 'OAuth selhalo' } }
+    return { success: true, data: { url: data.url } }
+  } catch (e) {
+    return { success: false, error: toErrorResponse(e) }
+  }
+}
+
+/** Pošle email s odkazem pro reset hesla. */
+export async function requestPasswordReset(email: string): Promise<ActionResult<{ message: string }>> {
+  try {
+    const supabase = await createClient()
+    const origin = (await headers()).get('origin') ?? ''
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/reset-hesla` })
+    if (error) return { success: false, error: { code: ErrorCodes.DATABASE_ERROR, message: error.message } }
+    return { success: true, data: { message: 'Pokud email existuje, poslali jsme odkaz pro obnovu hesla.' } }
+  } catch (e) {
+    return { success: false, error: toErrorResponse(e) }
+  }
+}
+
+/** Nastaví nové heslo (v recovery session po kliknutí na odkaz). */
+export async function updatePassword(newPassword: string): Promise<ActionResult> {
+  try {
+    const v = validatePassword(newPassword)
+    if (!v.ok) return { success: false, error: { code: ErrorCodes.INVALID_INPUT, message: v.reason } }
+    const supabase = await createClient()
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) return { success: false, error: { code: ErrorCodes.DATABASE_ERROR, message: error.message } }
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: toErrorResponse(e) }
+  }
+}
+
+/** Po loginu: kam přesměrovat dle role (admin/pořadatel → /admin, jinak → /). */
+export async function resolveLandingPath(): Promise<ActionResult<{ path: string }>> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: true, data: { path: '/' } }
+    if (isSystemAdmin(user.id)) return { success: true, data: { path: '/admin' } }
+    const { data: isSys } = await (supabase.rpc as any)('is_system_admin', { p_user_id: user.id })
+    if (isSys === true) return { success: true, data: { path: '/admin' } }
+    const { data: roles } = await supabase.from('zavod_role').select('role').eq('user_id', user.id).in('role', ['hlavni_admin', 'poradatel'])
+    return { success: true, data: { path: (roles && roles.length > 0) ? '/admin' : '/' } }
+  } catch {
+    return { success: true, data: { path: '/' } }
   }
 }
