@@ -116,7 +116,7 @@ export default function ZavodLayout({ children, params }: ZavodLayoutProps) {
     const fetchUserAndRole = async () => {
       console.log('fetchUserAndRole: Starting...')
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
-      console.log('fetchUserAndRole: getUser result:', { email: authUser?.email, error: authError?.message })
+      if (authError) console.error('fetchUserAndRole: getUser selhalo')
 
       if (authUser) {
         // Get user profile
