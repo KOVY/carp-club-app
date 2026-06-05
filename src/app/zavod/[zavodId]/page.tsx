@@ -18,8 +18,10 @@ import { DataDisplay } from "@/components/ui/DataDisplay"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
 import { CompactLeaderboard, CompactBiggestFish, AddCatchButton, MapaPravidla } from "@/components/zavod"
 import { PrihlasitButton } from "@/components/zavod/PrihlasitButton"
+import { StavPrihlaskyCard } from "@/components/zavod/StavPrihlaskyCard"
 import { getLeaderboard, getNejvetsiRyby } from "@/actions/leaderboard.actions"
-import type { Zavod, UserRole } from "@/lib/types"
+import { getMojePrihlasky } from "@/actions/prihlasky.actions"
+import type { Zavod, UserRole, Prihlaska } from "@/lib/types"
 
 // Extended Zavod type with map fields
 interface ZavodWithMap extends Zavod {
@@ -132,6 +134,13 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
     }
   }
 
+  // Fetch moje přihláška pro tento závod
+  let mojePrihlaska: Prihlaska | null = null
+  if (user) {
+    const mp = await getMojePrihlasky()
+    if (mp.success) mojePrihlaska = (mp.data ?? []).find((p: Prihlaska) => p.zavod_id === zavodId) ?? null
+  }
+
   // Fetch teams count
   const { count: teamsCount } = await supabase
     .from('tymy')
@@ -230,10 +239,12 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
           zavodStav={zavodData.stav}
           serverUserRole={userRole}
         />
-        {/* Přihlásit na závod - pro přihlášeného uživatele bez role a bez týmu ve fázi příprav */}
-        {user && userRole === null && userTeam === null && zavodData.stav === 'priprava' && (
+        {/* Přihlásit na závod / stav přihlášky - pro přihlášeného uživatele bez role a bez týmu */}
+        {mojePrihlaska ? (
+          <StavPrihlaskyCard prihlaska={mojePrihlaska} />
+        ) : (user && userRole === null && userTeam === null && zavodData.stav === 'priprava') ? (
           <PrihlasitButton zavodId={zavodId} />
-        )}
+        ) : null}
       </div>
 
       {/* User Welcome Card - for logged in users */}

@@ -115,6 +115,13 @@ export async function schvalitPrihlasku(prihlaskaId: string): Promise<ActionResu
     const res = await createTym({ zavodId: (p as any).zavod_id, nazev: (p as any).nazev_tymu, kapitanId: (p as any).kapitan_user_id })
     if (!res.success) return res as any
     await (adminClient.from('prihlasky') as any).update({ stav: 'schvaleno', tym_id: res.data!.tymId, updated_at: new Date().toISOString() }).eq('id', prihlaskaId)
+    // I2: pokud byl schvalovaný náhradník, přečísluj zbylé náhradníky s vyšším pořadím o -1
+    if ((p as any).stav === 'nahradnik') {
+      const { data: rest } = await adminClient.from('prihlasky').select('id, poradi_nahradnika')
+        .eq('zavod_id', (p as any).zavod_id).eq('stav', 'nahradnik')
+        .gt('poradi_nahradnika', (p as any).poradi_nahradnika)
+      for (const r of rest ?? []) await adminClient.from('prihlasky').update({ poradi_nahradnika: r.poradi_nahradnika - 1 }).eq('id', r.id)
+    }
     return { success: true, data: { tymId: res.data!.tymId } }
   } catch (e) { return { success: false, error: toErrorResponse(e) } }
 }
