@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import { calculateTymScore, sortLeaderboard, getPoradiCas } from '@/lib/scoring'
 import { canViewFullLeaderboard, canManageZavod } from '@/lib/permissions'
+import { applyDisqualifikace, jeDiskvalifikovan } from '@/lib/disqualifikace'
 import type { 
   ActionResult, 
   LeaderboardEntry,
@@ -65,18 +66,19 @@ export async function getLeaderboard(
       }
     }
 
-    const zavodData = zavod as Zavod
+    const zavodData = zavod as Zavod & { diskvalifikace_pocet_karet?: number | null }
+    const prah = (zavodData.diskvalifikace_pocet_karet as number) ?? 3
 
     // Check if embargo is active
     const now = new Date()
-    const embargoActive = zavodData.embargo_od 
+    const embargoActive = zavodData.embargo_od
       ? now >= new Date(zavodData.embargo_od) && now <= new Date(zavodData.datum_end)
       : false
 
     // Determine user's role for embargo visibility
     let canSeeWeights = !embargoActive
     let userRole: PermissionContext['role'] = 'divak'
-    
+
     if (user) {
       // Check if user is rozhodci or poradatel
       const { data: zavodRole } = await supabase
@@ -185,19 +187,34 @@ export async function getLeaderboard(
       // Get yellow card count
       const zluteKartyCount = yellowCardCounts.get(tym.id) || 0
 
+      const skoreRaw = canSeeWeights ? scoringResult.skore : 0
+      const skore = applyDisqualifikace(skoreRaw, zluteKartyCount, prah)
+      const isDisqualified = jeDiskvalifikovan(zluteKartyCount, prah)
+
       return {
         tym,
-        skore: canSeeWeights ? scoringResult.skore : 0,
+        skore,
         pocetRyb: scoringResult.pocetRyb,
         top5Ryby: canSeeWeights ? scoringResult.top5Ryby : [],
         zluteKarty: zluteKartyCount,
         poradiCas,
-        poradi: 0, // Will be set by sortLeaderboard
+        poradi: 0, // Will be set below
+        isDisqualified,
       }
     })
 
-    // Sort leaderboard by score and tie-breaking rules
-    const sortedLeaderboard = sortLeaderboard(leaderboardEntries)
+    // Sort: diskvalifikovaní na konec, pak skóre desc, pak poradiCas asc
+    leaderboardEntries.sort((a, b) => {
+      if (a.isDisqualified !== b.isDisqualified) return a.isDisqualified ? 1 : -1
+      if (b.skore !== a.skore) return b.skore - a.skore
+      return (new Date(a.poradiCas).getTime()) - (new Date(b.poradiCas).getTime())
+    })
+
+    // Assign poradi after sorting
+    const sortedLeaderboard = leaderboardEntries.map((entry, index) => ({
+      ...entry,
+      poradi: index + 1,
+    }))
 
     return {
       success: true,

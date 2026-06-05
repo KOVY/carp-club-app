@@ -560,6 +560,7 @@ function calculateDemoLeaderboard(): LeaderboardEntry[] {
       zluteKarty: 0, // No yellow cards in demo
       poradiCas: earliestCatch?.cas || '',
       poradi: 0, // Will be set after sorting
+      isDisqualified: false,
     }
   })
   

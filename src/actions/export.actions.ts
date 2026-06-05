@@ -138,6 +138,7 @@ export async function generateHtmlExport(
         zluteKarty: zluteKartyCount,
         poradiCas,
         poradi: 0,
+        isDisqualified: false,
       }
     })
 

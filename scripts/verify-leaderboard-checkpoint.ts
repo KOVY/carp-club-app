@@ -105,6 +105,7 @@ function createMockLeaderboardEntry(
     zluteKarty: 0,
     poradiCas,
     poradi: 0,
+    isDisqualified: false,
   };
 }
 

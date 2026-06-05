@@ -68,6 +68,7 @@ export interface LeaderboardEntry {
   zluteKarty: number;
   poradiCas: string;
   poradi: number;
+  isDisqualified: boolean;
 }
 
 // Generic action result type for server actions

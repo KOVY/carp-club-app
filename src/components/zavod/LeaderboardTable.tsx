@@ -161,7 +161,7 @@ interface LeaderboardRowProps {
  */
 function LeaderboardCard({ entry, position, weightsVisible }: LeaderboardRowProps) {
   const { tym, skore, pocetRyb, zluteKarty } = entry
-  const isDisqualified = zluteKarty >= 2
+  const isDisqualified = entry.isDisqualified ?? false
 
   const getMedalColor = (pos: number) => {
     switch (pos) {
@@ -200,12 +200,14 @@ function LeaderboardCard({ entry, position, weightsVisible }: LeaderboardRowProp
 
       {/* Team info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <p className={cn("font-medium truncate", isDisqualified && "line-through")}>
             {tym.nazev}
           </p>
           {isDisqualified && (
-            <span className="text-xs text-destructive font-medium">(DQ)</span>
+            <span className="text-xs bg-destructive/10 text-destructive font-semibold px-1.5 py-0.5 rounded">
+              Diskvalifikováno
+            </span>
           )}
         </div>
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -250,7 +252,7 @@ function LeaderboardCard({ entry, position, weightsVisible }: LeaderboardRowProp
 
 function LeaderboardRow({ entry, position, weightsVisible }: LeaderboardRowProps) {
   const { tym, skore, pocetRyb, zluteKarty } = entry
-  const isDisqualified = zluteKarty >= 2
+  const isDisqualified = entry.isDisqualified ?? false
 
   // Medal colors for top 3
   const getMedalColor = (pos: number) => {
@@ -288,12 +290,14 @@ function LeaderboardRow({ entry, position, weightsVisible }: LeaderboardRowProps
 
       {/* Team name */}
       <TableCell>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className={cn(isDisqualified && "line-through")}>
             {tym.nazev}
           </span>
           {isDisqualified && (
-            <span className="text-xs text-destructive">(DQ)</span>
+            <span className="text-xs bg-destructive/10 text-destructive font-semibold px-1.5 py-0.5 rounded">
+              Diskvalifikováno
+            </span>
           )}
         </div>
       </TableCell>
