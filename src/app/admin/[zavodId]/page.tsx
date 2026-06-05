@@ -360,6 +360,12 @@ export default function ZavodDetailPage({ params }: PageProps) {
                 <span className="ml-auto text-muted-foreground">{stats?.pocet_tymu || 0}</span>
               </Button>
             </Link>
+            <Link href={`/admin/${zavodId}/prihlasky`} className="block">
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <Users className="h-4 w-4" />
+                Přihlášky
+              </Button>
+            </Link>
             <Link href={`/admin/${zavodId}/rozhodci`} className="block">
               <Button variant="outline" className="w-full justify-start gap-2">
                 <Trophy className="h-4 w-4" />
