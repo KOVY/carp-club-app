@@ -48,14 +48,9 @@ async function checkZavodAdminAccess(zavodId: string): Promise<string | null> {
     return user.id
   }
 
-  // Check system_admins table
-  const { data: sysAdmin } = await supabase
-    .from('system_admins')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (sysAdmin) {
+  // Check system_admins via SECURITY DEFINER RPC (po migraci 016 už není přímý SELECT povolen)
+  const { data: isSysAdmin } = await (supabase as any).rpc('is_system_admin', { p_user_id: user.id })
+  if (isSysAdmin === true) {
     return user.id
   }
 

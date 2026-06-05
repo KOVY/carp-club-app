@@ -71,16 +71,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         console.log('[AdminLayout] User is system admin!')
         isHlavniAdmin = true
       } else {
-        // First check system_admins table (global admin)
-        const { data: systemAdmin, error: sysAdminError } = await supabase
-          .from('system_admins')
-          .select('id, role')
-          .eq('user_id', authUser.id)
-          .maybeSingle()
+        // First check system_admins via SECURITY DEFINER RPC (po migraci 016 už není přímý SELECT povolen)
+        const { data: systemAdmin, error: sysAdminError } = await (supabase as any).rpc('is_system_admin', { p_user_id: authUser.id })
 
         console.log('[AdminLayout] system_admins check:', { systemAdmin, error: sysAdminError?.message })
 
-        if (systemAdmin) {
+        if (systemAdmin === true) {
           // User is a system admin - has full access
           console.log('[AdminLayout] User is system admin!')
           isHlavniAdmin = true

@@ -201,17 +201,13 @@ async function checkHlavniAdminAccess(
     return true
   }
 
-  // First check system_admins table (global admin)
-  const { data: systemAdmin, error: sysAdminError } = await supabase
-    .from('system_admins')
-    .select('id')
-    .eq('user_id', userId)
-    .maybeSingle()
+  // First check system_admins via SECURITY DEFINER RPC (po migraci 016 už není přímý SELECT povolen)
+  const { data: systemAdmin, error: sysAdminError } = await (supabase as any).rpc('is_system_admin', { p_user_id: userId })
 
   console.log('[Middleware] checkHlavniAdminAccess for userId:', userId)
   console.log('[Middleware] system_admins result:', { systemAdmin, error: sysAdminError?.message })
 
-  if (systemAdmin) {
+  if (systemAdmin === true) {
     console.log('[Middleware] User is system admin, granting access')
     return true
   }
