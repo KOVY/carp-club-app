@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { GlassCard, GlassCardContent, GlassCardDescription, GlassCardHeader, GlassCardTitle } from "@/components/ui/GlassCard"
 import { DataDisplay } from "@/components/ui/DataDisplay"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
@@ -75,8 +76,9 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
   let userTeam: { id: string; nazev: string; barva: string; peg_cislo: number | null } | null = null
 
   if (user) {
-    // Fetch user profile
-    const { data: profileData } = await supabase
+    // Fetch user profile (adminClient — telefon skryto RLS po migraci 016)
+    const adminClient = createAdminClient()
+    const { data: profileData } = await adminClient
       .from('profiles')
       .select('jmeno, telefon')
       .eq('id', user.id)

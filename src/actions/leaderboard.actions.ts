@@ -102,7 +102,7 @@ export async function getLeaderboard(
       .from('tymy')
       .select(`
         *,
-        kapitan:profiles!tymy_kapitan_id_fkey(id, jmeno, email)
+        kapitan:profiles!tymy_kapitan_id_fkey(id, jmeno)
       `)
       .eq('zavod_id', zavodId)
 

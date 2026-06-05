@@ -214,14 +214,14 @@ export async function getTymDetail(tymId: string): Promise<ActionResult<TymWithC
       }
     }
 
-    // Získat kapitána
+    // Získat kapitána (email/telefon ponecháno — pořadatel vidí kontakty v admin UI)
     const { data: kapitan } = await adminClient
       .from('profiles')
-      .select('*')
+      .select('id, jmeno, email, telefon')
       .eq('id', tym.kapitan_id)
       .single()
 
-    // Získat členy s profily
+    // Získat členy s profily (email ponecháno — zobrazuje se v admin UI)
     const { data: clenoveData } = await adminClient
       .from('clenove_tymu')
       .select(`
@@ -230,7 +230,7 @@ export async function getTymDetail(tymId: string): Promise<ActionResult<TymWithC
         user_id,
         role,
         created_at,
-        user:profiles(*)
+        user:profiles(id, jmeno, email)
       `)
       .eq('tym_id', tymId)
 

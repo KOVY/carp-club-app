@@ -12,6 +12,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import type { ActionResult, UserRole, ZavodRole, Tym, ClenTymu } from '@/lib/types'
 
@@ -253,8 +254,9 @@ export async function getCurrentUser(): Promise<ActionResult<{
       }
     }
 
-    // Get profile data
-    const { data: profile } = await supabase
+    // Get profile data (adminClient — telefon skryto RLS po migraci 016)
+    const adminClient = createAdminClient()
+    const { data: profile } = await adminClient
       .from('profiles')
       .select('jmeno, telefon')
       .eq('id', user.id)
