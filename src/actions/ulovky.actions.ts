@@ -21,6 +21,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import { MIN_VAHA_KG, DRUHY_RYB } from '@/lib/constants'
 import { canSubmitUlovek } from '@/lib/permissions'
+import { validateFotoFile, EXT_BY_MIME } from '@/lib/validators/foto'
 import type {
   ActionResult,
   SubmitUlovekInput,
@@ -207,14 +208,12 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
       }
     }
 
-    // Requirement 3.5: Photo is required
-    if (!fotoFile || fotoFile.size === 0) {
+    // Requirement 3.5/3.6: Foto povinné + validace MIME a velikosti
+    const fotoCheck = validateFotoFile(fotoFile)
+    if (!fotoCheck.ok) {
       return {
         success: false,
-        error: {
-          code: ErrorCodes.MISSING_PHOTO,
-          message: ErrorMessages[ErrorCodes.MISSING_PHOTO],
-        },
+        error: { code: ErrorCodes.MISSING_PHOTO, message: fotoCheck.reason },
       }
     }
 
@@ -361,7 +360,7 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
 
     // Requirement 3.6: Upload photo to Supabase Storage
     // Use adminClient to bypass RLS on storage bucket
-    const fileExt = fotoFile.name.split('.').pop() || 'jpg'
+    const fileExt = EXT_BY_MIME[fotoFile.type] ?? 'jpg'
     const fileName = `${zavodId}/${membershipData.tym_id}/${Date.now()}.${fileExt}`
 
     const { error: uploadError } = await adminClient.storage
