@@ -22,6 +22,10 @@ const protectedRoutes = [
 const publicRoutes = [
   '/login',
   '/admin/login', // Separate admin login page
+  '/registrace',
+  '/zapomenute-heslo',
+  '/reset-hesla',
+  '/auth/callback',
   '/zavod/*/verejnost',
   '/zavod/*/leaderboard',
   '/zavod/*/galerie',
