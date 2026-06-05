@@ -90,3 +90,56 @@ export async function getMojePrihlasky(): Promise<ActionResult<Prihlaska[]>> {
     return { success: true, data: (data ?? []) as Prihlaska[] }
   } catch (e) { return { success: false, error: toErrorResponse(e) } }
 }
+
+/** Pořadatel: seznam přihlášek závodu (přihlášení + náhradníci). */
+export async function getPrihlaskyZavodu(zavodId: string): Promise<ActionResult<Prihlaska[]>> {
+  try {
+    const userId = await checkZavodAdminAccess(zavodId)
+    if (!userId) return { success: false, error: { code: ErrorCodes.UNAUTHORIZED, message: ErrorMessages[ErrorCodes.UNAUTHORIZED] } }
+    const adminClient = createAdminClient()
+    const { data } = await adminClient.from('prihlasky').select('*').eq('zavod_id', zavodId)
+      .neq('stav', 'zruseno').order('created_at', { ascending: true })
+    return { success: true, data: (data ?? []) as Prihlaska[] }
+  } catch (e) { return { success: false, error: toErrorResponse(e) } }
+}
+
+/** Pořadatel: schválí přihlášku → vytvoří tým. */
+export async function schvalitPrihlasku(prihlaskaId: string): Promise<ActionResult<{ tymId: string }>> {
+  try {
+    const adminClient = createAdminClient()
+    const { data: p } = await adminClient.from('prihlasky').select('*').eq('id', prihlaskaId).single()
+    if (!p) return { success: false, error: { code: ErrorCodes.NOT_FOUND, message: ErrorMessages[ErrorCodes.NOT_FOUND] } }
+    const userId = await checkZavodAdminAccess((p as any).zavod_id)
+    if (!userId) return { success: false, error: { code: ErrorCodes.UNAUTHORIZED, message: ErrorMessages[ErrorCodes.UNAUTHORIZED] } }
+    const { createTym } = await import('@/actions/admin.actions')
+    const res = await createTym({ zavodId: (p as any).zavod_id, nazev: (p as any).nazev_tymu, kapitanId: (p as any).kapitan_user_id })
+    if (!res.success) return res as any
+    await (adminClient.from('prihlasky') as any).update({ stav: 'schvaleno', tym_id: res.data!.tymId, updated_at: new Date().toISOString() }).eq('id', prihlaskaId)
+    return { success: true, data: { tymId: res.data!.tymId } }
+  } catch (e) { return { success: false, error: toErrorResponse(e) } }
+}
+
+/** Pořadatel: odhlásí přihlášku; náhradník postoupí. */
+export async function odebratPrihlasku(prihlaskaId: string): Promise<ActionResult> {
+  try {
+    const adminClient = createAdminClient()
+    const { data: p } = await adminClient.from('prihlasky').select('*').eq('id', prihlaskaId).single()
+    if (!p) return { success: false, error: { code: ErrorCodes.NOT_FOUND, message: ErrorMessages[ErrorCodes.NOT_FOUND] } }
+    const userId = await checkZavodAdminAccess((p as any).zavod_id)
+    if (!userId) return { success: false, error: { code: ErrorCodes.UNAUTHORIZED, message: ErrorMessages[ErrorCodes.UNAUTHORIZED] } }
+    await (adminClient.from('prihlasky') as any).update({ stav: 'zruseno', updated_at: new Date().toISOString() }).eq('id', prihlaskaId)
+    if ((p as any).stav === 'prihlasen') await promoteNahradnik(adminClient, (p as any).zavod_id)
+    return { success: true }
+  } catch (e) { return { success: false, error: toErrorResponse(e) } }
+}
+
+/** Pořadatel: nastaví počet pegů (kapacitu) závodu. */
+export async function nastavitPocetPegu(zavodId: string, pocet: number | null): Promise<ActionResult> {
+  try {
+    const userId = await checkZavodAdminAccess(zavodId)
+    if (!userId) return { success: false, error: { code: ErrorCodes.UNAUTHORIZED, message: ErrorMessages[ErrorCodes.UNAUTHORIZED] } }
+    const adminClient = createAdminClient()
+    await (adminClient.from('zavody') as any).update({ pocet_pegu: pocet }).eq('id', zavodId)
+    return { success: true }
+  } catch (e) { return { success: false, error: toErrorResponse(e) } }
+}
