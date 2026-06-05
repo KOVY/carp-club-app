@@ -225,6 +225,20 @@ export interface TymOverview {
   pocet_registrovanych: number;
 }
 
+// Přihlášky na závod
+export interface Prihlaska {
+  id: string;
+  zavod_id: string;
+  kapitan_user_id: string;
+  nazev_tymu: string;
+  clenove: string | null;
+  stav: 'prihlasen' | 'nahradnik' | 'schvaleno' | 'zruseno';
+  poradi_nahradnika: number | null;
+  tym_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Barvy týmů
 export const TEAM_COLORS = [
   { name: 'Modrá', hex: '#3B82F6' },
