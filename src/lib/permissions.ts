@@ -40,13 +40,13 @@ export function canConfirmUlovek(ctx: PermissionContext, ulovekTymPeg: number): 
   if (ctx.role === 'rozhodci' || ctx.role === 'poradatel') {
     return true;
   }
-  
-  // kapitan can only confirm neighbor pegs
-  if (ctx.role === 'kapitan' && ctx.pegCislo !== undefined) {
-    const diff = Math.abs(ctx.pegCislo - ulovekTymPeg);
-    return diff === 1;
+
+  // Fáze 3b: kapitán smí potvrdit úlovek libovolného týmu (ne jen sousedního pegu).
+  // Vlastní tým řeší self-confirmation guard v potvrditUlovek action.
+  if (ctx.role === 'kapitan') {
+    return true;
   }
-  
+
   return false;
 }
 
