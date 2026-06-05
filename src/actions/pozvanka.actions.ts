@@ -281,10 +281,8 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
     if (newUser?.user) {
       // Nový uživatel úspěšně vytvořen
       targetUserId = newUser.user.id
-      console.log('Created new user:', targetUserId)
     } else if (createError?.message?.includes('already been registered')) {
       // Uživatel už existuje - najít ho v databázi
-      console.log('User already exists, searching...')
 
       // Hledat uživatele přes profiles tabulku
       const { data: existingUserData } = await adminClient
@@ -296,7 +294,6 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
       const existingProfile = existingUserData as { id: string } | null
       if (existingProfile?.id) {
         targetUserId = existingProfile.id
-        console.log('Found existing user via profiles:', targetUserId)
       } else {
         // Fallback: prohledat auth uživatele po stránkách
         let found = false
@@ -314,7 +311,6 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
           const existingUser = usersData.users.find(u => u.email?.toLowerCase() === email)
           if (existingUser) {
             targetUserId = existingUser.id
-            console.log('Found existing user via listUsers:', targetUserId)
             found = true
             break
           }
@@ -371,8 +367,6 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
 
     if (profileError) {
       console.error('Failed to upsert profile:', profileError)
-    } else {
-      console.log('Profile upserted successfully for user:', targetUserId, 'jmeno:', jmeno)
     }
 
     // 3. Zaregistrovat uživatele do závodu
@@ -386,8 +380,6 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
 
     if (roleError) {
       console.error('Failed to upsert zavod_role:', roleError)
-    } else {
-      console.log('Role assigned:', role, 'for user:', targetUserId, 'in zavod:', input.zavodId)
     }
 
     // 4. Přidat do týmu (pokud je specifikován)
@@ -402,8 +394,6 @@ export async function createPozvanka(input: CreatePozvankaInput): Promise<Action
 
       if (teamError) {
         console.error('Failed to add to team:', teamError)
-      } else {
-        console.log('User added to team:', input.tymId)
       }
 
       // Nastavit kapitána pokud je role kapitán
@@ -694,8 +684,6 @@ export async function verifyPozvanka(token: string): Promise<ActionResult<{
     // Use admin client to bypass RLS - this is a public verification endpoint
     const adminClient = createAdminClient()
 
-    console.log('verifyPozvanka: Looking for token:', token)
-
     const { data: pozvankaData, error } = await adminClient
       .from('pozvanky')
       .select(`
@@ -705,8 +693,6 @@ export async function verifyPozvanka(token: string): Promise<ActionResult<{
       `)
       .eq('token', token)
       .single()
-
-    console.log('verifyPozvanka: Result:', { found: !!pozvankaData, error: error?.message })
 
     const pozvanka = pozvankaData as {
       id: string

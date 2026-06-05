@@ -73,7 +73,6 @@ export function AuthCallbackHandler() {
 
           console.log('AuthCallbackHandler: setSession result:', {
             hasSession: !!data?.session,
-            user: data?.session?.user?.email,
             error: sessionError?.message
           })
 
@@ -83,7 +82,7 @@ export function AuthCallbackHandler() {
           }
 
           if (data?.session) {
-            console.log('AuthCallbackHandler: Success! User:', data.session.user.email)
+            console.log('AuthCallbackHandler: Session established successfully')
           }
         } catch (timeoutErr) {
           console.log('AuthCallbackHandler: Session call timed out, reloading anyway')

@@ -48,7 +48,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       const supabase = createClient()
 
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
-      console.log('[AdminLayout] Auth check:', { authUser: authUser?.id, authError: authError?.message })
+      if (authError) console.error('[AdminLayout] Auth check failed:', authError.message)
 
       if (!authUser) {
         console.log('[AdminLayout] No auth user, redirecting to login')
@@ -69,7 +69,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       // process.env.SYSTEM_ADMIN_IDS není na klientu dostupné, RPC is_system_admin je rozhodující)
       const { data: systemAdmin, error: sysAdminError } = await (supabase as any).rpc('is_system_admin', { p_user_id: authUser.id })
 
-      console.log('[AdminLayout] system_admins check:', { systemAdmin, error: sysAdminError?.message })
+      if (sysAdminError) console.error('[AdminLayout] system_admins check failed:', sysAdminError.message)
 
       if (systemAdmin === true) {
         // User is a system admin - has full access
@@ -83,7 +83,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           .eq('user_id', authUser.id)
           .in('role', ['hlavni_admin', 'poradatel'])
 
-        console.log('[AdminLayout] zavod_role check:', { rolesData, error: rolesError?.message })
+        if (rolesError) console.error('[AdminLayout] zavod_role check failed:', rolesError.message)
 
         const roles = rolesData as Array<{ role: string }> | null
 
