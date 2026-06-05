@@ -17,6 +17,7 @@ import { GlassCard, GlassCardContent, GlassCardDescription, GlassCardHeader, Gla
 import { DataDisplay } from "@/components/ui/DataDisplay"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
 import { CompactLeaderboard, CompactBiggestFish, AddCatchButton, MapaPravidla } from "@/components/zavod"
+import { PrihlasitButton } from "@/components/zavod/PrihlasitButton"
 import { getLeaderboard, getNejvetsiRyby } from "@/actions/leaderboard.actions"
 import type { Zavod, UserRole } from "@/lib/types"
 
@@ -229,6 +230,10 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
           zavodStav={zavodData.stav}
           serverUserRole={userRole}
         />
+        {/* Přihlásit na závod - pro přihlášeného uživatele bez role a bez týmu ve fázi příprav */}
+        {user && userRole === null && userTeam === null && zavodData.stav === 'priprava' && (
+          <PrihlasitButton zavodId={zavodId} />
+        )}
       </div>
 
       {/* User Welcome Card - for logged in users */}
