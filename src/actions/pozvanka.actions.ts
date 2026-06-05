@@ -800,8 +800,8 @@ export async function registerViaInvitation(
     const supabase = await createClient()
     const adminClient = createAdminClient()
 
-    // Zavolat DB funkci
-    const { data, error } = await (supabase
+    // Zavolat DB funkci přes service role (anon/authenticated EXECUTE bude odebrán migrací 016)
+    const { data, error } = await (adminClient
       .rpc as any)('register_via_invitation', { p_token: token })
 
     if (error) {
