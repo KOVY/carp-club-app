@@ -21,7 +21,6 @@ const protectedRoutes = [
 // Routes that are always public
 const publicRoutes = [
   '/login',
-  '/admin/login', // Separate admin login page
   '/registrace',
   '/zapomenute-heslo',
   '/reset-hesla',
@@ -97,11 +96,6 @@ export async function middleware(request: NextRequest) {
   // Check if route requires authentication
   if (matchRoute(pathname, protectedRoutes)) {
     if (!user) {
-      // For admin routes, redirect to admin login
-      if (matchRoute(pathname, hlavniAdminRoutes)) {
-        return NextResponse.redirect(new URL('/admin/login', request.url))
-      }
-      // For other protected routes, redirect to regular login
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('returnTo', pathname)
       return NextResponse.redirect(loginUrl)

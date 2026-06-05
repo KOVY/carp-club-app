@@ -42,12 +42,6 @@ export const DEFAULT_POCET_POTVRZENI = 2;
 export const MAX_CLENU_TYMU = 3;
 
 /**
- * Session timeout in hours
- * Requirement 9.5: Auto-logout after 24 hours of inactivity
- */
-export const SESSION_TIMEOUT_HOURS = 24;
-
-/**
  * Fish types allowed in competitions
  */
 export const DRUHY_RYB = ['kapr', 'amur'] as const;
