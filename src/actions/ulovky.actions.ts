@@ -359,10 +359,15 @@ export async function submitUlovek(input: SubmitUlovekInput): Promise<ActionResu
     }
 
     // Pravidla 2026: tým s aktivní stopkou nesmí zadat úlovek (server-side vynucení, ne jen UI)
-    const { data: maStopku } = await (adminClient as any).rpc('tym_has_active_stopka', {
+    // Fail-closed: při chybě RPC nebo nečekané návratové hodnotě úlovek NEpustíme.
+    const { data: maStopku, error: stopkaErr } = await (adminClient as any).rpc('tym_has_active_stopka', {
       p_tym_id: membershipData.tym_id, p_zavod_id: zavodId,
     })
-    if (maStopku === true) {
+    if (stopkaErr || typeof maStopku !== 'boolean') {
+      console.error('Kontrola stopky selhala (fail-closed):', stopkaErr?.message ?? 'non-boolean výsledek')
+      return { success: false, error: { code: ErrorCodes.DATABASE_ERROR, message: ErrorMessages[ErrorCodes.DATABASE_ERROR] } }
+    }
+    if (maStopku) {
       return { success: false, error: { code: ErrorCodes.STOPKA_ACTIVE, message: ErrorMessages[ErrorCodes.STOPKA_ACTIVE] } }
     }
 
