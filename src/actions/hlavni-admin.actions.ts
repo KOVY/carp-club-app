@@ -42,15 +42,9 @@ async function checkAdminAccess(): Promise<{ userId: string; isHlavniAdmin: bool
     return { userId: user.id, isHlavniAdmin: true }
   }
 
-  // Nejprve zkontroluj system_admins (globální admin)
-  const { data: systemAdmin } = await supabase
-    .from('system_admins')
-    .select('id, role')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (systemAdmin) {
-    // Systémový admin má plná práva
+  // Systémový admin přes SECURITY DEFINER RPC (po migraci 016 už není přímý SELECT povolen)
+  const { data: isSysAdmin } = await (supabase as any).rpc('is_system_admin', { p_user_id: user.id })
+  if (isSysAdmin === true) {
     return { userId: user.id, isHlavniAdmin: true }
   }
 
@@ -68,6 +62,27 @@ async function checkAdminAccess(): Promise<{ userId: string; isHlavniAdmin: bool
   const isHlavniAdmin = roles.some((r: { role: string }) => r.role === 'hlavni_admin')
 
   return { userId: user.id, isHlavniAdmin }
+}
+
+/**
+ * Kontrola oprávnění pro KONKRÉTNÍ závod (brání cross-závod eskalaci).
+ * System/hlavní admin projde vždy; pořadatel jen pro daný zavod_id.
+ */
+async function checkAdminAccessForZavod(zavodId: string): Promise<{ userId: string; isHlavniAdmin: boolean } | null> {
+  const base = await checkAdminAccess()
+  if (!base) return null
+  if (base.isHlavniAdmin) return base // system/hlavni admin má globální právo
+
+  const supabase = await createClient()
+  const { data: roles } = await supabase
+    .from('zavod_role')
+    .select('role')
+    .eq('user_id', base.userId)
+    .eq('zavod_id', zavodId)
+    .in('role', ['hlavni_admin', 'poradatel'])
+
+  if (!roles || roles.length === 0) return null
+  return base
 }
 
 /**
@@ -141,7 +156,7 @@ export async function getZavodDetail(zavodId: string): Promise<ActionResult<{
   try {
     const adminClient = createAdminClient()
 
-    const access = await checkAdminAccess()
+    const access = await checkAdminAccessForZavod(zavodId)
     if (!access) {
       return {
         success: false,
@@ -183,9 +198,9 @@ export async function getZavodDetail(zavodId: string): Promise<ActionResult<{
       adminClient.from('clenove_tymu').select('*', { count: 'exact', head: true })
         .in('tym_id', (await adminClient.from('tymy').select('id').eq('zavod_id', zavodId)).data?.map((t: { id: string }) => t.id) || []),
       adminClient.from('pozvanky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
-      adminClient.from('pozvanky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId).eq('pouzita', true),
+      adminClient.from('pozvanky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId).not('registrovano_at', 'is', null),
       adminClient.from('ulovky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
-      adminClient.from('ulovky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId).eq('potvrzeno', true),
+      adminClient.from('ulovky').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId).eq('stav', 'potvrzeno'),
       adminClient.from('zlute_karty').select('*', { count: 'exact', head: true }).eq('zavod_id', zavodId),
     ])
 
@@ -571,7 +586,7 @@ export async function getSouteze(): Promise<ActionResult<{ id: string; nazev: st
  */
 export async function getPendingUlovkyAdmin(zavodId: string): Promise<ActionResult<any[]>> {
   try {
-    const access = await checkAdminAccess()
+    const access = await checkAdminAccessForZavod(zavodId)
     if (!access) {
       return {
         success: false,
@@ -627,18 +642,15 @@ export async function getPendingUlovkyAdmin(zavodId: string): Promise<ActionResu
  */
 export async function confirmUlovekAdmin(ulovekId: string): Promise<ActionResult<void>> {
   try {
-    const access = await checkAdminAccess()
-    if (!access) {
-      return {
-        success: false,
-        error: {
-          code: ErrorCodes.UNAUTHORIZED,
-          message: 'Nemáte oprávnění',
-        },
-      }
-    }
-
     const adminClient = createAdminClient()
+    const { data: ulovek } = await adminClient.from('ulovky').select('zavod_id').eq('id', ulovekId).single()
+    if (!ulovek) {
+      return { success: false, error: { code: ErrorCodes.ULOVEK_NOT_FOUND, message: ErrorMessages[ErrorCodes.ULOVEK_NOT_FOUND] } }
+    }
+    const access = await checkAdminAccessForZavod((ulovek as any).zavod_id)
+    if (!access) {
+      return { success: false, error: { code: ErrorCodes.UNAUTHORIZED, message: ErrorMessages[ErrorCodes.UNAUTHORIZED] } }
+    }
 
     // Update catch to confirmed
     const { error } = await (adminClient
@@ -685,18 +697,15 @@ export async function confirmUlovekAdmin(ulovekId: string): Promise<ActionResult
  */
 export async function rejectUlovekAdmin(ulovekId: string, reason?: string): Promise<ActionResult<void>> {
   try {
-    const access = await checkAdminAccess()
-    if (!access) {
-      return {
-        success: false,
-        error: {
-          code: ErrorCodes.UNAUTHORIZED,
-          message: 'Nemáte oprávnění',
-        },
-      }
-    }
-
     const adminClient = createAdminClient()
+    const { data: ulovek } = await adminClient.from('ulovky').select('zavod_id').eq('id', ulovekId).single()
+    if (!ulovek) {
+      return { success: false, error: { code: ErrorCodes.ULOVEK_NOT_FOUND, message: ErrorMessages[ErrorCodes.ULOVEK_NOT_FOUND] } }
+    }
+    const access = await checkAdminAccessForZavod((ulovek as any).zavod_id)
+    if (!access) {
+      return { success: false, error: { code: ErrorCodes.UNAUTHORIZED, message: ErrorMessages[ErrorCodes.UNAUTHORIZED] } }
+    }
 
     // Update catch to rejected
     const { error } = await (adminClient
