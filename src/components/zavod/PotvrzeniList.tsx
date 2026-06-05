@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Check, X, Clock, Fish, Loader2, MapPin } from "lucide-react"
+import { Check, Clock, Fish, Loader2, MapPin } from "lucide-react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -15,8 +15,6 @@ import {
 import { DataDisplay } from "@/components/ui/DataDisplay"
 import { StatusBadge } from "@/components/ui/StatusBadge"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { triggerHaptic } from "@/hooks/useHapticFeedback"
 import { potvrditUlovek } from "@/actions/potvrzeni.actions"
@@ -30,10 +28,10 @@ interface PotvrzeniListProps {
 
 /**
  * PotvrzeniList - List of catches waiting for confirmation
- * 
+ *
  * Requirements:
  * - 4.1: Display catches waiting for confirmation from neighbor pegs
- * - 4.2: Allow captain to confirm or reject catches
+ * - 4.2: Allow captain to confirm catches (rejection handled by referee/organizer)
  */
 export function PotvrzeniList({
   ulovky,
@@ -92,7 +90,7 @@ export function PotvrzeniList({
           </StatusBadge>
         </GlassCardTitle>
         <GlassCardDescription>
-          Potvrďte nebo zamítněte úlovky od sousedních týmů
+          Potvrďte úlovky od sousedních týmů
         </GlassCardDescription>
       </GlassCardHeader>
       <GlassCardContent className="space-y-4">
@@ -115,29 +113,24 @@ interface PotvrzeniItemProps {
 
 function PotvrzeniItem({ ulovek, onComplete }: PotvrzeniItemProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [poznamka, setPoznamka] = useState("")
-  const [showRejectForm, setShowRejectForm] = useState(false)
   const { toast } = useToast()
 
-  const handleConfirm = async (potvrzeno: boolean) => {
+  const handleConfirm = async () => {
     setIsSubmitting(true)
 
     try {
       const result = await potvrditUlovek({
         ulovekId: ulovek.id,
-        potvrzeno,
-        poznamka: poznamka || undefined,
+        potvrzeno: true,
       })
 
       if (result.success) {
         // Trigger haptic feedback on confirmation (Requirement 3.7)
-        triggerHaptic(potvrzeno ? 'success' : 'warning')
-        
+        triggerHaptic('success')
+
         toast({
-          title: potvrzeno ? "Úlovek potvrzen" : "Úlovek zamítnut",
-          description: potvrzeno
-            ? "Úlovek byl úspěšně potvrzen"
-            : "Úlovek byl zamítnut",
+          title: "Úlovek potvrzen",
+          description: "Úlovek byl úspěšně potvrzen",
         })
         onComplete?.()
       } else {
@@ -155,8 +148,6 @@ function PotvrzeniItem({ ulovek, onComplete }: PotvrzeniItemProps) {
       })
     } finally {
       setIsSubmitting(false)
-      setShowRejectForm(false)
-      setPoznamka("")
     }
   }
 
@@ -236,78 +227,22 @@ function PotvrzeniItem({ ulovek, onComplete }: PotvrzeniItemProps) {
         </div>
       )}
 
-      {/* Reject form */}
-      {showRejectForm && (
-        <div className="space-y-2 pt-2 border-t">
-          <Label htmlFor={`poznamka-${ulovek.id}`}>Důvod zamítnutí</Label>
-          <Input
-            id={`poznamka-${ulovek.id}`}
-            placeholder="Volitelný důvod zamítnutí..."
-            value={poznamka}
-            onChange={(e) => setPoznamka(e.target.value)}
-            disabled={isSubmitting}
-          />
-        </div>
-      )}
-
       {/* Action buttons */}
       <div className="flex gap-2 pt-2">
-        {showRejectForm ? (
-          <>
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => {
-                setShowRejectForm(false)
-                setPoznamka("")
-              }}
-              disabled={isSubmitting}
-            >
-              Zrušit
-            </Button>
-            <Button
-              variant="destructive"
-              className="flex-1"
-              onClick={() => handleConfirm(false)}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <X className="h-4 w-4 mr-2" />
-                  Zamítnout
-                </>
-              )}
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setShowRejectForm(true)}
-              disabled={isSubmitting}
-            >
-              <X className="h-4 w-4 mr-2" />
-              Zamítnout
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={() => handleConfirm(true)}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Potvrdit
-                </>
-              )}
-            </Button>
-          </>
-        )}
+        <Button
+          className="flex-1"
+          onClick={handleConfirm}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <Check className="h-4 w-4 mr-2" />
+              Potvrdit
+            </>
+          )}
+        </Button>
       </div>
     </div>
   )
