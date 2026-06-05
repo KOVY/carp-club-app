@@ -45,3 +45,8 @@ next-env.d.ts
 
 # Kiro
 .kiro/
+.env*.local
+
+# Supabase CLI
+supabase/.temp
+supabase/.branches
