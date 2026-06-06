@@ -17,10 +17,11 @@ export function RootLayoutClient({ children }: RootLayoutClientProps) {
   const isAdminPage = pathname?.startsWith('/admin')
   const isZavodPage = pathname?.startsWith('/zavod/')
   const isPozvankaPage = pathname?.startsWith('/pozvanka/')
+  const isDisplejPage = pathname?.startsWith('/displej')
   const isLandingPage = pathname === '/'
 
-  // Admin and Zavod pages have their own custom layouts
-  if (isAdminPage || isZavodPage || isPozvankaPage) {
+  // Admin, Zavod, Pozvanka a Displej mají vlastní/čistý layout
+  if (isAdminPage || isZavodPage || isPozvankaPage || isDisplejPage) {
     return <>{children}</>
   }
 
