@@ -94,9 +94,11 @@ export function LigaTable({
                 // Základní styly
                 "bg-card/50 hover:bg-card",
                 // Medailové pozice
-                pozice === 1 && "bg-yellow-500/10 border border-yellow-500/20",
+                pozice === 1 && !isDisqualified && "bg-yellow-500/10 border-2 border-yellow-500/40",
                 pozice === 2 && "bg-gray-500/10 border border-gray-500/20",
                 pozice === 3 && "bg-amber-500/10 border border-amber-500/20",
+                // Halo vedoucího (night glow / den nic) — jen pokud není v zóně
+                pozice === 1 && !isDisqualified && !vSestupoveZone && !vPostupoveZone && "halo-card",
                 // Sestupová zóna (Liga A)
                 vSestupoveZone && "bg-red-500/5 border border-red-500/20",
                 // Postupová zóna (Liga B)
@@ -112,7 +114,9 @@ export function LigaTable({
                   pozice === 1 && "bg-yellow-500/20 text-yellow-600",
                   pozice === 2 && "bg-gray-500/20 text-gray-500",
                   pozice === 3 && "bg-amber-500/20 text-amber-600",
-                  pozice > 3 && "bg-muted text-muted-foreground"
+                  pozice > 3 && "bg-muted text-muted-foreground",
+                  // Zlatá zář medaile vedoucího
+                  pozice === 1 && !isDisqualified && "medal-glow-1"
                 )}
               >
                 {pozice <= 3 ? <Medal className="h-5 w-5" /> : pozice}
@@ -123,7 +127,8 @@ export function LigaTable({
                 <div className="flex items-center gap-2">
                   <p
                     className={cn(
-                      "font-medium truncate",
+                      "truncate",
+                      pozice === 1 && !isDisqualified ? "font-bold text-foreground" : "font-medium",
                       isDisqualified && "line-through"
                     )}
                   >
@@ -169,8 +174,11 @@ export function LigaTable({
                 <div className="text-right flex-shrink-0">
                   <span
                     className={cn(
-                      "font-mono text-lg font-semibold",
-                      isDisqualified && "text-destructive"
+                      "font-mono font-extrabold",
+                      // Vedoucí dostane text-2xl, ostatní text-xl
+                      pozice === 1 && !isDisqualified ? "text-2xl" : "text-xl",
+                      // Barvy: diskvalifikovaný → destructive, ostatní → accent (oranžová/zlatá)
+                      isDisqualified ? "text-destructive font-bold" : "text-accent"
                     )}
                   >
                     {isDisqualified ? "0.00" : entry.skore.toFixed(2)}
