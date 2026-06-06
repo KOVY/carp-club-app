@@ -185,7 +185,7 @@ function LoginForm() {
       <div className="mt-8 pt-6 border-t border-gray-200 text-center space-y-3">
         <p className="text-sm text-gray-600">
           Nemáš účet?{' '}
-          <Link href="/registrace" className="text-blue-600 hover:text-blue-800 font-medium transition-colors">
+          <Link href={returnTo && returnTo !== '/' ? `/registrace?returnTo=${encodeURIComponent(returnTo)}` : '/registrace'} className="text-blue-600 hover:text-blue-800 font-medium transition-colors">
             Zaregistruj se
           </Link>
         </p>

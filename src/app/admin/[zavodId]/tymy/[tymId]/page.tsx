@@ -443,204 +443,21 @@ export default function TymDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
-        {/* Pozvánky */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Pozvánky ({pozvanky.length})
-              </CardTitle>
-              <CardDescription>
-                Odeslané pozvánky pro členy týmu
-              </CardDescription>
-            </div>
-            <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-1">
-                  <Plus className="h-4 w-4" />
-                  Přidat
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Přidat člena týmu</DialogTitle>
-                  <DialogDescription>
-                    Vyplňte údaje nového člena. Na zadaný email bude automaticky odeslána pozvánka.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="jmeno">Jméno *</Label>
-                    <Input
-                      id="jmeno"
-                      placeholder="Jan Novák"
-                      value={newMember.jmeno}
-                      onChange={(e) => setNewMember({ ...newMember, jmeno: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="jan@email.cz"
-                      value={newMember.email}
-                      onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="telefon">Telefon</Label>
-                    <Input
-                      id="telefon"
-                      type="tel"
-                      placeholder="+420 123 456 789"
-                      value={newMember.telefon}
-                      onChange={(e) => setNewMember({ ...newMember, telefon: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select
-                      value={newMember.role}
-                      onValueChange={(value: "zavodnik" | "kapitan") => setNewMember({ ...newMember, role: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="zavodnik">Závodník</SelectItem>
-                        <SelectItem value="kapitan">Kapitán</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowAddMember(false)}>
-                    Zrušit
-                  </Button>
-                  <Button type="button" onClick={handleAddMember} disabled={isAddingMember}>
-                    {isAddingMember ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        Odesílám...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-1" />
-                        Odeslat pozvánku
-                      </>
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+        {/* Členy týmu uvádí kapitán sám při přihlášce na závod (samoobsluha).
+            E-mailové pozvánky byly zrušeny. */}
+        <Card className="bg-muted/30">
+          <CardHeader>
+            <CardTitle>Členové týmu</CardTitle>
+            <CardDescription>
+              Členy uvádí kapitán při přihlášce na závod. E-mailové pozvánky se už nepoužívají —
+              závodníci se registrují sami. Rozhodčí přiřadíte v sekci „Rozhodčí".
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            {pozvanky.length > 0 ? (
-              <div className="space-y-3">
-                {pozvanky.map((pozvanka) => (
-                  <div key={pozvanka.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      pozvanka.pouzita ? 'bg-green-500/10' : 'bg-blue-500/10'
-                    }`}>
-                      {pozvanka.pouzita ? (
-                        <Check className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <Clock className="h-5 w-5 text-blue-600" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{pozvanka.jmeno}</p>
-                      <p className="text-sm text-muted-foreground truncate">{pozvanka.email}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {pozvanka.pouzita ? (
-                        <Badge variant="outline" className="text-green-600 border-green-600">
-                          Registrován
-                        </Badge>
-                      ) : (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => copyInviteLink(pozvanka.token, pozvanka.id)}
-                            title="Zkopírovat odkaz"
-                            className={copiedId === pozvanka.id ? 'text-green-600' : ''}
-                          >
-                            {copiedId === pozvanka.id ? (
-                              <Check className="h-4 w-4" />
-                            ) : (
-                              <Copy className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleResendPozvanka(pozvanka.id)}
-                            disabled={resendingId === pozvanka.id}
-                            title="Vygenerovat nový token"
-                          >
-                            {resendingId === pozvanka.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <RefreshCw className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-destructive hover:text-destructive"
-                                disabled={deletingPozvankaId === pozvanka.id}
-                              >
-                                {deletingPozvankaId === pozvanka.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Smazat pozvánku?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Pozvánka pro {pozvanka.jmeno} bude zrušena.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Zrušit</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeletePozvanka(pozvanka.id)}
-                                  className="bg-destructive hover:bg-destructive/90"
-                                >
-                                  Smazat
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-muted-foreground mb-4">Zatím žádné pozvánky</p>
-                <Button size="sm" onClick={() => setShowAddMember(true)}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Přidat prvního člena
-                </Button>
-              </div>
-            )}
-          </CardContent>
         </Card>
       </div>
 
       {/* Smazat tým */}
-      {pozvanky.length === 0 && registrovaniClenove.length === 0 && (
+      {registrovaniClenove.length === 0 && (
         <Card className="border-destructive/50">
           <CardHeader>
             <CardTitle className="text-destructive">Nebezpečná zóna</CardTitle>

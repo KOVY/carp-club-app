@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useTransition, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signUpWithPassword, signInWithGoogle, resolveLandingPath } from '@/actions/auth.actions'
 
-export default function RegistracePage() {
+function RegistraceForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const returnTo = searchParams.get('returnTo') || ''
   const [jmeno, setJmeno] = useState('')
   const [email, setEmail] = useState('')
   const [heslo, setHeslo] = useState('')
@@ -23,8 +25,12 @@ export default function RegistracePage() {
         setError(r.error?.message || 'Registrace selhala')
         return
       }
-      const landing = await resolveLandingPath()
-      router.push(landing.success ? landing.data!.path : '/')
+      if (returnTo) {
+        router.push(returnTo)
+      } else {
+        const landing = await resolveLandingPath()
+        router.push(landing.success ? landing.data!.path : '/')
+      }
       router.refresh()
     })
   }
@@ -35,7 +41,7 @@ export default function RegistracePage() {
       return
     }
     startTransition(async () => {
-      const r = await signInWithGoogle('/')
+      const r = await signInWithGoogle(returnTo || '/')
       if (r.success && r.data?.url) {
         window.location.href = r.data.url
       } else {
@@ -218,11 +224,19 @@ export default function RegistracePage() {
       <div className="mt-8 pt-6 border-t border-gray-200 text-center">
         <p className="text-sm text-gray-600">
           Máš účet?{' '}
-          <Link href="/login" className="text-blue-600 hover:text-blue-800 font-medium transition-colors">
+          <Link href={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : '/login'} className="text-blue-600 hover:text-blue-800 font-medium transition-colors">
             Přihlas se
           </Link>
         </p>
       </div>
     </div>
+  )
+}
+
+export default function RegistracePage() {
+  return (
+    <Suspense fallback={null}>
+      <RegistraceForm />
+    </Suspense>
   )
 }

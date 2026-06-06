@@ -110,12 +110,21 @@ export function ZavodCard({ zavod, highlighted }: ZavodCardProps) {
             </div>
           </div>
 
-          <Link href={`/zavod/${zavod.id}`}>
-            <Button variant="outline" size="sm" className="shrink-0">
-              Zobrazit
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </Link>
+          <div className="flex flex-col gap-2 shrink-0">
+            <Link href={`/zavod/${zavod.id}`}>
+              <Button variant="outline" size="sm" className="w-full">
+                Zobrazit
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </Link>
+            {zavod.stav === "priprava" && (
+              <Link href={`/zavod/${zavod.id}`}>
+                <Button size="sm" className="w-full">
+                  Přihlásit se
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -17,6 +17,8 @@ import { GlassCard, GlassCardContent, GlassCardDescription, GlassCardHeader, Gla
 import { DataDisplay } from "@/components/ui/DataDisplay"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
 import { CompactLeaderboard, CompactBiggestFish, AddCatchButton, MapaPravidla, ChatPanel } from "@/components/zavod"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import { PrihlasitButton } from "@/components/zavod/PrihlasitButton"
 import { StavPrihlaskyCard } from "@/components/zavod/StavPrihlaskyCard"
 import { getLeaderboard, getNejvetsiRyby } from "@/actions/leaderboard.actions"
@@ -244,6 +246,10 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
           <StavPrihlaskyCard prihlaska={mojePrihlaska} />
         ) : (user && userRole === null && userTeam === null && zavodData.stav === 'priprava') ? (
           <PrihlasitButton zavodId={zavodId} />
+        ) : (!user && zavodData.stav === 'priprava') ? (
+          <Button asChild size="lg">
+            <Link href={`/login?returnTo=/zavod/${zavodId}`}>Přihlásit se na závod</Link>
+          </Button>
         ) : null}
       </div>
 

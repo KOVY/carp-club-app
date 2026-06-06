@@ -20,6 +20,34 @@ async function checkZavodAdminAccess(zavodId: string): Promise<string | null> {
   return (roles && roles.length > 0) ? user.id : null
 }
 
+/**
+ * Interní: auto-přijetí — vytvoří tým pro přihlášku, přidá kapitána do clenove_tymu
+ * a označí přihlášku jako schválenou. Běží přes adminClient (service role), proto ho
+ * smí spustit i samotný závodník (obchází admin-guard v createTym). Vrací tymId nebo null.
+ */
+async function vytvoritTymProPrihlasku(
+  adminClient: any,
+  prihlaska: { id: string; zavod_id: string; nazev_tymu: string; kapitan_user_id: string },
+): Promise<string | null> {
+  const variabilniSymbol = `${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
+  const { data: tym, error } = await adminClient.from('tymy').insert({
+    zavod_id: prihlaska.zavod_id,
+    nazev: prihlaska.nazev_tymu,
+    kapitan_id: prihlaska.kapitan_user_id,
+    variabilni_symbol: variabilniSymbol,
+  }).select('id').single()
+  if (error || !tym) { console.error('[vytvoritTymProPrihlasku] tym insert:', error?.message); return null }
+  const tymId = (tym as { id: string }).id
+  const { error: memberErr } = await adminClient.from('clenove_tymu').insert({
+    tym_id: tymId, user_id: prihlaska.kapitan_user_id, role: 'kapitan',
+  })
+  if (memberErr) console.error('[vytvoritTymProPrihlasku] clen insert:', memberErr.message)
+  await adminClient.from('prihlasky').update({
+    stav: 'schvaleno', tym_id: tymId, poradi_nahradnika: null, updated_at: new Date().toISOString(),
+  }).eq('id', prihlaska.id)
+  return tymId
+}
+
 /** Rybář se přihlásí na závod (založí tým jako kapitán). */
 export async function prihlasitNaZavod(
   zavodId: string, input: { nazevTymu: string; clenove?: string },
@@ -48,7 +76,15 @@ export async function prihlasitNaZavod(
       if (error.code === '23505') return { success: false, error: { code: ErrorCodes.ALREADY_REGISTERED, message: ErrorMessages[ErrorCodes.ALREADY_REGISTERED] } }
       return { success: false, error: { code: ErrorCodes.DATABASE_ERROR, message: error.message } }
     }
-    return { success: true, data: { prihlaskaId: created.id, stav } }
+    // Auto-přijetí: do naplnění kapacity rovnou vytvoříme tým a schválíme (bez zásahu pořadatele).
+    let finalStav: string = stav
+    if (stav === 'prihlasen') {
+      const tymId = await vytvoritTymProPrihlasku(adminClient, {
+        id: created.id, zavod_id: zavodId, nazev_tymu: input.nazevTymu.trim(), kapitan_user_id: user.id,
+      })
+      if (tymId) finalStav = 'schvaleno'
+    }
+    return { success: true, data: { prihlaskaId: created.id, stav: finalStav } }
   } catch (e) { return { success: false, error: toErrorResponse(e) } }
 }
 
@@ -68,12 +104,15 @@ export async function zrusitPrihlasku(prihlaskaId: string): Promise<ActionResult
   } catch (e) { return { success: false, error: toErrorResponse(e) } }
 }
 
-/** Interní: posune prvního náhradníka na přihlášeného a přečísluje zbytek. */
+/** Interní: první náhradník postoupí (auto-přijetí → rovnou tým + schváleno) a zbytek se přečísluje. */
 async function promoteNahradnik(adminClient: any, zavodId: string): Promise<void> {
-  const { data: first } = await adminClient.from('prihlasky').select('id')
+  const { data: first } = await adminClient.from('prihlasky').select('id, zavod_id, nazev_tymu, kapitan_user_id')
     .eq('zavod_id', zavodId).eq('stav', 'nahradnik').order('poradi_nahradnika', { ascending: true }).limit(1)
   if (!first || first.length === 0) return
-  await adminClient.from('prihlasky').update({ stav: 'prihlasen', poradi_nahradnika: null }).eq('id', first[0].id)
+  const p = first[0]
+  await vytvoritTymProPrihlasku(adminClient, {
+    id: p.id, zavod_id: p.zavod_id, nazev_tymu: p.nazev_tymu, kapitan_user_id: p.kapitan_user_id,
+  })
   const { data: rest } = await adminClient.from('prihlasky').select('id, poradi_nahradnika')
     .eq('zavod_id', zavodId).eq('stav', 'nahradnik').order('poradi_nahradnika', { ascending: true })
   for (const r of rest ?? []) await adminClient.from('prihlasky').update({ poradi_nahradnika: r.poradi_nahradnika - 1 }).eq('id', r.id)
