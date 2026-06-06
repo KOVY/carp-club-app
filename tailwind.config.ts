@@ -177,7 +177,7 @@ const config: Config = {
   		},
   		boxShadow: {
   			'halo': '0 0 28px var(--halo)',
-  			'leader': '0 0 24px rgba(251,146,60,0.45)',
+  			'leader': 'var(--leader-glow)',
   			'glow-teal': '0 0 20px rgba(56,189,248,0.35)',
   		},
   	}
