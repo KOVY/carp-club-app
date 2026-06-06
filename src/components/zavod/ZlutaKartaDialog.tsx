@@ -32,6 +32,7 @@ interface ZlutaKartaDialogProps {
   currentYellowCards?: number
   onSuccess?: () => void
   trigger?: React.ReactNode
+  prahKaret?: number
 }
 
 /**
@@ -48,6 +49,7 @@ export function ZlutaKartaDialog({
   currentYellowCards = 0,
   onSuccess,
   trigger,
+  prahKaret = 3,
 }: ZlutaKartaDialogProps) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -55,7 +57,7 @@ export function ZlutaKartaDialog({
   const [stopkaHodin, setStopkaHodin] = useState<string>("0") // "0" = bez stopky, "3" = 3 hodiny, "6" = 6 hodin
   const { toast } = useToast()
 
-  const willBeDisqualified = currentYellowCards >= 1
+  const willBeDisqualified = currentYellowCards >= prahKaret - 1
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -85,8 +87,8 @@ export function ZlutaKartaDialog({
         const hasStopka = result.data?.stopkaDo !== null
 
         let description = ""
-        if (cardCount >= 2) {
-          description = `Tým ${tym.nazev} byl diskvalifikován (2. žlutá karta)`
+        if (cardCount >= prahKaret) {
+          description = `Tým ${tym.nazev} byl diskvalifikován (${prahKaret}. žlutá karta)`
         } else if (hasStopka) {
           description = `Tým ${tym.nazev} obdržel ${cardCount}. žlutou kartu se stopkou na ${stopkaHodin} hodin`
         } else {
@@ -96,7 +98,7 @@ export function ZlutaKartaDialog({
         toast({
           title: "Žlutá karta udělena",
           description,
-          variant: cardCount >= 2 ? "destructive" : "default",
+          variant: cardCount >= prahKaret ? "destructive" : "default",
         })
 
         setOpen(false)
@@ -264,12 +266,13 @@ export function ZlutaKartaDialog({
 interface YellowCardBadgeProps {
   count: number
   className?: string
+  prahKaret?: number
 }
 
-export function YellowCardBadge({ count, className }: YellowCardBadgeProps) {
+export function YellowCardBadge({ count, className, prahKaret = 3 }: YellowCardBadgeProps) {
   if (count === 0) return null
 
-  const isDisqualified = count >= 2
+  const isDisqualified = count >= prahKaret
 
   return (
     <div

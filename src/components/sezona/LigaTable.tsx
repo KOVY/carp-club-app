@@ -15,6 +15,8 @@ interface LigaTableProps {
   pocetSestupujicich?: number
   /** Počet týmů v postupové zóně (pro Ligu B) */
   pocetPostupujicich?: number
+  /** Práh počtu žlutých karet pro diskvalifikaci */
+  prahKaret?: number
 }
 
 export function LigaTable({
@@ -25,6 +27,7 @@ export function LigaTable({
   showWeights = true,
   pocetSestupujicich = 3,
   pocetPostupujicich = 1,
+  prahKaret = 3,
 }: LigaTableProps) {
   const weightsVisible = showWeights && !embargoActive
   const celkemTymu = entries.length
@@ -42,7 +45,7 @@ export function LigaTable({
     <div className="space-y-1">
       {entries.map((entry, index) => {
         const pozice = index + 1
-        const isDisqualified = entry.zluteKarty >= 2
+        const isDisqualified = entry.isDisqualified ?? entry.zluteKarty >= prahKaret
 
         // Určení zóny
         const vSestupoveZone =
@@ -151,7 +154,7 @@ export function LigaTable({
                     <span
                       className={cn(
                         "flex items-center gap-1",
-                        entry.zluteKarty >= 2 ? "text-destructive" : "text-amber-500"
+                        entry.zluteKarty >= prahKaret ? "text-destructive" : "text-amber-500"
                       )}
                     >
                       <AlertTriangle className="h-3 w-3" />

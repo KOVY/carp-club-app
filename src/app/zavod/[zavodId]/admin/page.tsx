@@ -434,7 +434,8 @@ export default function AdminPage({ params }: AdminPageProps) {
                         )}
                       </TableCell>
                       <TableCell>
-                        {tym.yellowCardCount >= 2 ? (
+                        {/* Práh diskvalifikace: ideálně zavodData.diskvalifikace_pocet_karet, zde fallback 3 */}
+                        {tym.yellowCardCount >= 3 ? (
                           <StatusBadge status="rejected" size="sm">Diskvalifikován</StatusBadge>
                         ) : tym.zaplaceno ? (
                           <StatusBadge status="confirmed" size="sm">Aktivní</StatusBadge>

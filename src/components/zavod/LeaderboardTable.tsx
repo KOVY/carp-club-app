@@ -27,6 +27,7 @@ interface LeaderboardTableProps {
   embargoActive?: boolean
   showWeights?: boolean
   isLoading?: boolean
+  prahKaret?: number
 }
 
 /**
@@ -41,6 +42,7 @@ export function LeaderboardTable({
   embargoActive = false,
   showWeights = true,
   isLoading = false,
+  prahKaret = 3,
 }: LeaderboardTableProps) {
   // Determine if weights should be visible
   const weightsVisible = showWeights && !embargoActive
@@ -114,6 +116,7 @@ export function LeaderboardTable({
               entry={entry}
               position={index + 1}
               weightsVisible={weightsVisible}
+              prahKaret={prahKaret}
             />
           ))}
         </div>
@@ -140,6 +143,7 @@ export function LeaderboardTable({
                   entry={entry}
                   position={index + 1}
                   weightsVisible={weightsVisible}
+                  prahKaret={prahKaret}
                 />
               ))}
             </TableBody>
@@ -154,12 +158,13 @@ interface LeaderboardRowProps {
   entry: LeaderboardEntry
   position: number
   weightsVisible: boolean
+  prahKaret?: number
 }
 
 /**
  * Mobile card view for leaderboard entry
  */
-function LeaderboardCard({ entry, position, weightsVisible }: LeaderboardRowProps) {
+function LeaderboardCard({ entry, position, weightsVisible, prahKaret = 3 }: LeaderboardRowProps) {
   const { tym, skore, pocetRyb, zluteKarty } = entry
   const isDisqualified = entry.isDisqualified ?? false
 
@@ -219,7 +224,7 @@ function LeaderboardCard({ entry, position, weightsVisible }: LeaderboardRowProp
           {zluteKarty > 0 && (
             <span className={cn(
               "flex items-center gap-1",
-              zluteKarty >= 2 ? "text-destructive" : "text-amber-500"
+              zluteKarty >= prahKaret ? "text-destructive" : "text-amber-500"
             )}>
               <AlertTriangle className="h-3 w-3" />
               {zluteKarty} ŽK
@@ -250,7 +255,7 @@ function LeaderboardCard({ entry, position, weightsVisible }: LeaderboardRowProp
   )
 }
 
-function LeaderboardRow({ entry, position, weightsVisible }: LeaderboardRowProps) {
+function LeaderboardRow({ entry, position, weightsVisible, prahKaret = 3 }: LeaderboardRowProps) {
   const { tym, skore, pocetRyb, zluteKarty } = entry
   const isDisqualified = entry.isDisqualified ?? false
 
@@ -340,13 +345,13 @@ function LeaderboardRow({ entry, position, weightsVisible }: LeaderboardRowProps
             <AlertTriangle
               className={cn(
                 "h-4 w-4",
-                zluteKarty >= 2 ? "text-destructive" : "text-amber-500"
+                zluteKarty >= prahKaret ? "text-destructive" : "text-amber-500"
               )}
             />
             <span
               className={cn(
                 "text-sm font-medium",
-                zluteKarty >= 2 ? "text-destructive" : "text-amber-500"
+                zluteKarty >= prahKaret ? "text-destructive" : "text-amber-500"
               )}
             >
               {zluteKarty}
@@ -368,6 +373,7 @@ interface CompactLeaderboardProps {
   embargoActive?: boolean
   showWeights?: boolean
   limit?: number
+  prahKaret?: number
 }
 
 export function CompactLeaderboard({
@@ -375,6 +381,7 @@ export function CompactLeaderboard({
   embargoActive = false,
   showWeights = true,
   limit = 5,
+  prahKaret = 3,
 }: CompactLeaderboardProps) {
   const weightsVisible = showWeights && !embargoActive
   const displayEntries = entries.slice(0, limit)
@@ -403,7 +410,7 @@ export function CompactLeaderboard({
             index === 0 && "bg-yellow-500/10",
             index === 1 && "bg-gray-500/10",
             index === 2 && "bg-amber-500/10",
-            entry.zluteKarty >= 2 && "opacity-50"
+            entry.isDisqualified && "opacity-50"
           )}
         >
           <span
@@ -439,7 +446,7 @@ export function CompactLeaderboard({
             <AlertTriangle
               className={cn(
                 "h-4 w-4 flex-shrink-0",
-                entry.zluteKarty >= 2 ? "text-destructive" : "text-amber-500"
+                entry.zluteKarty >= prahKaret ? "text-destructive" : "text-amber-500"
               )}
             />
           )}
