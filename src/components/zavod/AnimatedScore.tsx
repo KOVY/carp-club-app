@@ -50,6 +50,9 @@ export function AnimatedScore({
       className={cn(
         "tabular-nums transition-colors",
         isAnimating && "text-primary",
+        // POZOR: className volajícího MUSÍ zůstat POSLEDNÍ – tailwind-merge nechá poslední
+        // konfliktní text-color vyhrát, takže např. text-accent z leaderboardu záměrně
+        // přebíjí i isAnimating "text-primary" (barva je accent i během animace). Nepřehazovat.
         className
       )}
     >

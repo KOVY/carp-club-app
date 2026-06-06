@@ -168,6 +168,7 @@ function LeaderboardCard({ entry, position, weightsVisible, prahKaret = 3 }: Lea
   const { tym, skore, pocetRyb, zluteKarty } = entry
   const isDisqualified = entry.isDisqualified ?? false
 
+  // Card verze: + bg pro kruhový odznak (kolečko kolem pořadí/medaile)
   const getMedalColor = (pos: number) => {
     switch (pos) {
       case 1:
@@ -254,7 +255,7 @@ function LeaderboardCard({ entry, position, weightsVisible, prahKaret = 3 }: Lea
       {weightsVisible && (
         <div className="text-right flex-shrink-0">
           {isDisqualified ? (
-            <span className="text-destructive font-mono text-xl font-extrabold">0.00</span>
+            <span className="text-destructive font-mono text-xl font-bold">0.00</span>
           ) : (
             <AnimatedScore
               value={skore}
@@ -280,6 +281,7 @@ function LeaderboardRow({ entry, position, weightsVisible, prahKaret = 3 }: Lead
   const isDisqualified = entry.isDisqualified ?? false
 
   // Medal colors for top 3
+  // Row verze: bez bg — ikona medaile stojí volně v buňce tabulky
   const getMedalColor = (pos: number) => {
     switch (pos) {
       case 1:
@@ -299,7 +301,8 @@ function LeaderboardRow({ entry, position, weightsVisible, prahKaret = 3 }: Lead
     <TableRow
       className={cn(
         isDisqualified && "opacity-50 bg-destructive/5",
-        position <= 3 && !isDisqualified && "font-medium",
+        // Top 2-3 jemnější zvýraznění; vedoucí (pos 1) dostává font-bold níže (bez překryvu)
+        position > 1 && position <= 3 && !isDisqualified && "font-medium",
         // Řádek vedoucího: jemné akcentní pozadí + levý akcent okraj, drží čitelnost
         isLeader && "bg-primary/5 border-l-4 border-l-primary font-bold"
       )}
@@ -308,13 +311,20 @@ function LeaderboardRow({ entry, position, weightsVisible, prahKaret = 3 }: Lead
       <TableCell>
         <div className="flex items-center gap-1">
           {position <= 3 ? (
-            <Medal
+            // Glow patří na inline-flex wrapper, NE na holé <svg> (Safari/iOS ořezává box-shadow na SVG)
+            <span
               className={cn(
-                getMedalColor(position),
-                // Vedoucí: větší medaile + zlatá zář (kruh kolem ikony)
-                isLeader ? "h-7 w-7 rounded-full medal-glow-1" : "h-5 w-5"
+                "inline-flex rounded-full",
+                isLeader && "medal-glow-1"
               )}
-            />
+            >
+              <Medal
+                className={cn(
+                  getMedalColor(position),
+                  isLeader ? "h-7 w-7" : "h-5 w-5"
+                )}
+              />
+            </span>
           ) : (
             <span className="text-muted-foreground w-5 text-center">
               {position}
