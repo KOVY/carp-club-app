@@ -840,3 +840,58 @@ export async function updateTymPegLocation(
     }
   }
 }
+
+/**
+ * Přidat REGISTROVANÉHO uživatele do týmu (bez e-mailové pozvánky).
+ * Pořadatel vyhledá uživatele (hledatUzivatele) a přiřadí ho do týmu jako závodníka/kapitána.
+ * Zapisuje do clenove_tymu i zavod_role (role je nutná pro oprávnění v UI, např. přidání úlovku).
+ */
+export async function pridatClenaDoTymu(
+  tymId: string,
+  targetUserId: string,
+  role: 'zavodnik' | 'kapitan' = 'zavodnik',
+): Promise<ActionResult<void>> {
+  try {
+    const adminClient = createAdminClient()
+    const { data: tym } = await adminClient.from('tymy').select('id, zavod_id').eq('id', tymId).single()
+    if (!tym) return { success: false, error: { code: ErrorCodes.NOT_FOUND, message: 'Tým nenalezen' } }
+    const zavodId = (tym as { zavod_id: string }).zavod_id
+    const userId = await checkZavodAdminAccess(zavodId)
+    if (!userId) return { success: false, error: { code: ErrorCodes.UNAUTHORIZED, message: 'Nemáš oprávnění spravovat tento závod' } }
+
+    // Uživatel nesmí být už v jiném týmu téhož závodu.
+    const { data: zavodTymy } = await adminClient.from('tymy').select('id').eq('zavod_id', zavodId)
+    const tymIds = ((zavodTymy ?? []) as Array<{ id: string }>).map((t) => t.id)
+    if (tymIds.length > 0) {
+      const { data: existing } = await adminClient.from('clenove_tymu').select('tym_id').eq('user_id', targetUserId).in('tym_id', tymIds)
+      if (existing && existing.length > 0) {
+        return { success: false, error: { code: ErrorCodes.INVALID_INPUT, message: 'Uživatel už je členem některého týmu v tomto závodě.' } }
+      }
+    }
+
+    const { error: clenErr } = await (adminClient.from('clenove_tymu') as any).insert({ tym_id: tymId, user_id: targetUserId, role })
+    if (clenErr) return { success: false, error: { code: ErrorCodes.DATABASE_ERROR, message: clenErr.message } }
+    await (adminClient.from('zavod_role') as any).upsert({ zavod_id: zavodId, user_id: targetUserId, role }, { onConflict: 'zavod_id,user_id', ignoreDuplicates: true })
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: toErrorResponse(error) }
+  }
+}
+
+/** Odebrat člena z týmu (a jeho roli závodníka/kapitána v závodě; pořadatele/rozhodčího neodebírá). */
+export async function odebratClenaZTymu(tymId: string, targetUserId: string): Promise<ActionResult<void>> {
+  try {
+    const adminClient = createAdminClient()
+    const { data: tym } = await adminClient.from('tymy').select('id, zavod_id').eq('id', tymId).single()
+    if (!tym) return { success: false, error: { code: ErrorCodes.NOT_FOUND, message: 'Tým nenalezen' } }
+    const zavodId = (tym as { zavod_id: string }).zavod_id
+    const userId = await checkZavodAdminAccess(zavodId)
+    if (!userId) return { success: false, error: { code: ErrorCodes.UNAUTHORIZED, message: 'Nemáš oprávnění spravovat tento závod' } }
+
+    await (adminClient.from('clenove_tymu') as any).delete().eq('tym_id', tymId).eq('user_id', targetUserId)
+    await (adminClient.from('zavod_role') as any).delete().eq('zavod_id', zavodId).eq('user_id', targetUserId).in('role', ['zavodnik', 'kapitan'])
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: toErrorResponse(error) }
+  }
+}

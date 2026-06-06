@@ -28,7 +28,7 @@ interface NavItem {
   exact?: boolean
 }
 
-const navItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   { href: "/#zavody", label: "Závody" },
   { href: "/sezona", label: "Liga 2026" },
   { href: "/kalendar", label: "Kalendář" },
@@ -40,6 +40,9 @@ export function Header({ user, onSignOut, floating }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const pathname = usePathname()
+
+  // Nepřihlášenému přidáme „Registrace" do hlavní navigace (vedle Archivu).
+  const navItems = user ? baseNavItems : [...baseNavItems, { href: "/registrace", label: "Registrace" }]
 
   // Handle scroll for sticky header with backdrop-blur
   useEffect(() => {
@@ -188,9 +191,14 @@ export function Header({ user, onSignOut, floating }: HeaderProps) {
                 )}
               </div>
             ) : (
-              <Button variant="ghost" asChild>
-                <Link href="/login">Přihlásit se</Link>
-              </Button>
+              <>
+                <Button variant="ghost" asChild>
+                  <Link href="/login">Přihlásit se</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/registrace">Registrovat</Link>
+                </Button>
+              </>
             )}
           </nav>
 

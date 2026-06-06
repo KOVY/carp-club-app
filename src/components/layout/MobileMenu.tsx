@@ -219,11 +219,16 @@ export function MobileMenu({
               </div>
             </div>
           ) : (
-            <div className="p-4 border-b bg-muted/30">
+            <div className="p-4 border-b bg-muted/30 space-y-2">
               <Link href="/login" onClick={onClose}>
                 <Button className="w-full" variant="default">
                   <LogIn className="h-4 w-4 mr-2" />
                   Přihlásit se
+                </Button>
+              </Link>
+              <Link href="/registrace" onClick={onClose}>
+                <Button className="w-full" variant="outline">
+                  Registrovat
                 </Button>
               </Link>
             </div>

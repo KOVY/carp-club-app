@@ -57,7 +57,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { getTymDetail, updateTym, deleteTym } from "@/actions/tym.actions"
+import { getTymDetail, updateTym, deleteTym, pridatClenaDoTymu, odebratClenaZTymu } from "@/actions/tym.actions"
+import { hledatUzivatele, type RozhodciUzivatel } from "@/actions/rozhodci.actions"
 import { getPozvankyByTym, createPozvanka, resendPozvanka, deletePozvanka } from "@/actions/pozvanka.actions"
 import { TEAM_COLORS } from "@/lib/types"
 import type { Tym, Pozvanka, ClenTymuWithUser } from "@/lib/types"
@@ -89,6 +90,42 @@ export default function TymDetailPage({ params }: PageProps) {
   const [resendingId, setResendingId] = useState<string | null>(null)
   const [deletingPozvankaId, setDeletingPozvankaId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  // Přidat REGISTROVANÉHO člena do týmu (bez e-mailu, vyhledáním)
+  const [showAddClen, setShowAddClen] = useState(false)
+  const [clenQuery, setClenQuery] = useState("")
+  const [clenVysledky, setClenVysledky] = useState<RozhodciUzivatel[]>([])
+  const [clenSearching, setClenSearching] = useState(false)
+  const [clenRole, setClenRole] = useState<"zavodnik" | "kapitan">("zavodnik")
+  const [addingClenId, setAddingClenId] = useState<string | null>(null)
+  const [removingClenId, setRemovingClenId] = useState<string | null>(null)
+
+  const handleAddClen = async (uid: string) => {
+    setAddingClenId(uid)
+    setError(null)
+    const r = await pridatClenaDoTymu(tymId, uid, clenRole)
+    if (r.success) {
+      setShowAddClen(false)
+      setClenQuery("")
+      setClenVysledky([])
+      setClenRole("zavodnik")
+      fetchData()
+    } else {
+      setError(r.error?.message || "Nepodařilo se přidat člena")
+    }
+    setAddingClenId(null)
+  }
+
+  const handleRemoveClen = async (uid: string) => {
+    setRemovingClenId(uid)
+    const r = await odebratClenaZTymu(tymId, uid)
+    if (r.success) {
+      fetchData()
+    } else {
+      setError(r.error?.message || "Nepodařilo se odebrat člena")
+    }
+    setRemovingClenId(null)
+  }
 
   const copyInviteLink = async (token: string, pozvankaId: string) => {
     const link = `${window.location.origin}/pozvanka/${token}`
@@ -137,6 +174,20 @@ export default function TymDetailPage({ params }: PageProps) {
   useEffect(() => {
     fetchData()
   }, [tymId])
+
+  // Debounce vyhledávání registrovaných uživatelů pro přidání do týmu
+  useEffect(() => {
+    if (!showAddClen) return
+    const q = clenQuery.trim()
+    if (q.length < 2) { setClenVysledky([]); return }
+    setClenSearching(true)
+    const t = setTimeout(async () => {
+      const r = await hledatUzivatele(zavodId, q)
+      setClenVysledky(r.success ? r.data ?? [] : [])
+      setClenSearching(false)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [clenQuery, showAddClen, zavodId])
 
   const handleSaveEdit = async () => {
     setIsSaving(true)
@@ -432,6 +483,39 @@ export default function TymDetailPage({ params }: PageProps) {
                     <Badge variant={clen.role === 'kapitan' ? 'default' : 'secondary'}>
                       {clen.role === 'kapitan' ? 'Kapitán' : 'Závodník'}
                     </Badge>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          disabled={removingClenId === clen.user_id}
+                        >
+                          {removingClenId === clen.user_id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Odebrat člena?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {clen.user?.jmeno || 'Člen'} bude odebrán z týmu. Účet uživatele zůstane.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Zrušit</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleRemoveClen(clen.user_id)}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            Odebrat
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 ))}
               </div>
@@ -443,16 +527,96 @@ export default function TymDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
-        {/* Členy týmu uvádí kapitán sám při přihlášce na závod (samoobsluha).
-            E-mailové pozvánky byly zrušeny. */}
-        <Card className="bg-muted/30">
-          <CardHeader>
-            <CardTitle>Členové týmu</CardTitle>
-            <CardDescription>
-              Členy uvádí kapitán při přihlášce na závod. E-mailové pozvánky se už nepoužívají —
-              závodníci se registrují sami. Rozhodčí přiřadíte v sekci „Rozhodčí".
-            </CardDescription>
+        {/* Přidat REGISTROVANÉHO člena do týmu (bez e-mailu, vyhledáním) */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5" />
+                Přidat člena
+              </CardTitle>
+              <CardDescription>
+                Přiřaďte registrovaného závodníka do týmu (bez e-mailu).
+              </CardDescription>
+            </div>
+            <Dialog open={showAddClen} onOpenChange={setShowAddClen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1">
+                  <Plus className="h-4 w-4" />
+                  Přidat
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Přidat člena do týmu</DialogTitle>
+                  <DialogDescription>
+                    Najděte registrovaného uživatele podle jména nebo e-mailu. Uživatel se musí
+                    nejdřív sám zaregistrovat (e-mail+heslo nebo Google).
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Role v týmu</Label>
+                    <Select value={clenRole} onValueChange={(v: "zavodnik" | "kapitan") => setClenRole(v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="zavodnik">Závodník</SelectItem>
+                        <SelectItem value="kapitan">Kapitán</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="clen-search">Jméno nebo e-mail</Label>
+                    <Input
+                      id="clen-search"
+                      placeholder="např. Novák / novak@email.cz"
+                      value={clenQuery}
+                      onChange={(e) => setClenQuery(e.target.value)}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="min-h-[120px]">
+                    {clenSearching ? (
+                      <div className="flex items-center justify-center py-6 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Hledám…
+                      </div>
+                    ) : clenQuery.trim().length < 2 ? (
+                      <p className="text-sm text-muted-foreground text-center py-6">
+                        Zadejte alespoň 2 znaky pro vyhledávání.
+                      </p>
+                    ) : clenVysledky.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-6">
+                        Nikdo nenalezen. Uživatel se musí nejdřív zaregistrovat.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {clenVysledky.map((u) => (
+                          <div key={u.userId} className="flex items-center gap-3 p-2 rounded-lg border">
+                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <Users className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{u.jmeno}</p>
+                              <p className="text-sm text-muted-foreground truncate">{u.email}</p>
+                            </div>
+                            <Button size="sm" disabled={addingClenId === u.userId} onClick={() => handleAddClen(u.userId)}>
+                              {addingClenId === u.userId ? <Loader2 className="h-4 w-4 animate-spin" /> : "Přidat"}
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Tip: kapitán při přihlášce na závod uvádí spoluhráče jen jako jména. Tady přidáte ty,
+              kdo mají vlastní účet a budou sami zadávat úlovky.
+            </p>
+          </CardContent>
         </Card>
       </div>
 
