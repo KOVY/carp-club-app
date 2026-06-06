@@ -22,8 +22,8 @@ Vizuální jazyk je dán (Hluboká voda, den/noc, glow utility z 5a/5b) — žá
 ## 3. Architektura
 
 ### 3.1 Route a layout
-- **Route:** `src/app/zavod/[zavodId]/displej/page.tsx` (klientská — polling + fullscreen). Veřejně čitelná (jako `/verejnost`).
-- **Layout:** Buď vlastní `src/app/zavod/[zavodId]/displej/layout.tsx` (BEZ appkové navigace — žádný header/bottom nav, jen plný panel), nebo si page.tsx řídí celou plochu. Cíl: žádné rušivé UI okolo, jen dashboard. `min-h-screen`, velké rozestupy.
+- **Route:** `src/app/displej/[zavodId]/page.tsx` (klientská — polling + fullscreen). **MIMO** segment `/zavod/[zavodId]/` záměrně — ten má těžký vnořený layout (header + bottom nav + swipe), který na fullscreen displeji nechceme. URL je `/displej/<zavodId>`, pořadatel ji otevře na TV/projektoru.
+- **Čistá plocha:** v `src/components/layout/RootLayoutClient.tsx` přidat výjimku `isDisplejPage = pathname?.startsWith('/displej')` → vrátit jen `{children}` (stejně jako admin/zavod/pozvanka), aby displej nedostal landing Header/Footer/BottomNavigation. Stránka si pak řídí celou plochu (`min-h-screen`), velké rozestupy.
 - **Fullscreen:** tlačítko v hlavičce → `document.documentElement.requestFullscreen()` (s fallbackem, když API není). Stav fullscreen → skrýt přepínač/tlačítka pro čistý obraz (volitelně).
 
 ### 3.2 Sekce (plný panel, jedna obrazovka)
@@ -31,7 +31,7 @@ Vizuální jazyk je dán (Hluboká voda, den/noc, glow utility z 5a/5b) — žá
 2. **Hlavní plocha — živé pořadí:** velký leaderboard. Znovupoužít `LeaderboardTable` nebo nová `DisplejLeaderboard` (větší fonty/řádky, medaile `medal-glow-1`, vedoucí `animate-leader-pulse` + `halo-card`, váha hrdina `text-accent`). Zobrazit top N (kolik se vejde, ~8–12).
 3. **Boční/spodní panel:**
    - **Největší ryba:** `CompactBiggestFish` (z `NejvetsiRybaCard`) nebo větší varianta — váha + tým + peg, zvýrazněná.
-   - **Nevyřízená přivolání (read-only):** seznam `🔔 Peg X volá rozhodčího` (z `getZpravy` filtr `typ='privolani' && !vyrizeno`). Bez tlačítek (displej je read-only) — jen vizuální upozornění (akcentní karta, případně jemný puls). Když nic, panel skrytý/prázdný stav.
+   - **Nevyřízená přivolání (read-only):** seznam `🔔 Peg X volá rozhodčího` (z `getZpravy` filtr `typ='privolani' && !vyrizeno`). Bez tlačítek (displej je read-only) — jen vizuální upozornění (akcentní karta, případně jemný puls). **POZOR — auth:** `getZpravy` vyžaduje přihlášení + účastníka závodu (vrací `UNAUTHORIZED`/`FORBIDDEN` jinak). Panel přivolání je proto **best-effort**: zobrazí se jen když `getZpravy` uspěje (displej spuštěn přihlášeným pořadatelem/rozhodčím na jeho zařízení). Když selže (nepřihlášený divák), panel se **tiše skryje** — pořadí a největší ryba fungují dál veřejně. Žádná nová action, žádná security změna.
 
 ### 3.3 Data flow (polling)
 - `useEffect` + `setInterval(REFRESH_MS)` (≈15000) → paralelně `getLeaderboard(zavodId)`, `getNejvetsiRyby(zavodId, 1)`, `getZpravy(zavodId)` (filtr nevyřízená přivolání). První načtení hned (loading skeleton).
@@ -48,12 +48,12 @@ Vizuální jazyk je dán (Hluboká voda, den/noc, glow utility z 5a/5b) — žá
 
 | Soubor | Akce | Co |
 |--------|------|-----|
-| `src/app/zavod/[zavodId]/displej/page.tsx` | Create | klientská stránka: polling, odpočet, fullscreen, skládá sekce |
-| `src/app/zavod/[zavodId]/displej/layout.tsx` | Create (dle potřeby) | čistý fullscreen layout bez appkové navigace |
-| `src/components/zavod/DisplejLeaderboard.tsx` | Create (dle potřeby) | velká varianta leaderboardu pro displej (nebo znovupoužít `LeaderboardTable` s prop pro velikost) |
-| `src/components/zavod/DisplejPrivolani.tsx` | Create | read-only panel nevyřízených přivolání (bez vyřídit tlačítek) |
-| (znovupoužití) `LeaderboardTable`/`CompactLeaderboard`, `CompactBiggestFish`/`NejvetsiRybaCard` | — | leaderboard + největší ryba |
+| `src/app/displej/[zavodId]/page.tsx` | Create | klientská stránka: polling, odpočet, fullscreen, skládá sekce |
+| `src/components/layout/RootLayoutClient.tsx` | Modify | výjimka `isDisplejPage` → čistá plocha (jen children) |
+| `src/components/zavod/DisplejPrivolani.tsx` | Create | read-only panel nevyřízených přivolání (best-effort, bez vyřídit tlačítek) |
+| (znovupoužití) `CompactLeaderboard`/`LeaderboardTable`, `CompactBiggestFish` | — | leaderboard + největší ryba (velikost přes wrapper/prop) |
 | (znovupoužití) `getLeaderboard`, `getNejvetsiRyby`, `getZpravy` | — | data (existující actions) |
+| (znovupoužití) `StatusBadge`, `GlassCard`, `ThemeSwitcher` | — | hlavička, kontejnery, přepínač |
 
 Pozn.: preferovat znovupoužití existujících komponent s úpravou velikosti přes prop/wrapper před duplikací. Nové komponenty jen tam, kde se chování liší (read-only přivolání, velké rozložení).
 
