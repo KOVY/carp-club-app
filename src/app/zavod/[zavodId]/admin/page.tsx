@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Loading } from "@/components/common/Loading"
 import { ErrorState } from "@/components/common/ErrorState"
 import { ZlutaKartaDialog, YellowCardBadge } from "@/components/zavod/ZlutaKartaDialog"
+import { PrivolaniPanel } from "@/components/zavod/PrivolaniPanel"
 import { getPendingPotvrzeni } from "@/actions/potvrzeni.actions"
 import { potvrditUlovek } from "@/actions/potvrzeni.actions"
 import { getTeamsByZavod, getZluteKartyByTym } from "@/actions/admin.actions"
@@ -302,6 +303,9 @@ export default function AdminPage({ params }: AdminPageProps) {
           </GlassCardContent>
         </GlassCard>
       </div>
+
+      {/* Přivolání rozhodčího */}
+      <PrivolaniPanel zavodId={zavodId} />
 
       {/* Pending Catches */}
       <GlassCard>
