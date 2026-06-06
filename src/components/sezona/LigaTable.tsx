@@ -94,7 +94,7 @@ export function LigaTable({
                 // Základní styly
                 "bg-card/50 hover:bg-card",
                 // Medailové pozice
-                pozice === 1 && !isDisqualified && "bg-yellow-500/10 border-2 border-yellow-500/40",
+                pozice === 1 && !isDisqualified && !vSestupoveZone && !vPostupoveZone && "bg-yellow-500/10 border-2 border-yellow-500/40",
                 pozice === 2 && "bg-gray-500/10 border border-gray-500/20",
                 pozice === 3 && "bg-amber-500/10 border border-amber-500/20",
                 // Halo vedoucího (night glow / den nic) — jen pokud není v zóně
@@ -178,7 +178,7 @@ export function LigaTable({
                       // Vedoucí dostane text-2xl, ostatní text-xl
                       pozice === 1 && !isDisqualified ? "text-2xl" : "text-xl",
                       // Barvy: diskvalifikovaný → destructive, ostatní → accent (oranžová/zlatá)
-                      isDisqualified ? "text-destructive font-bold" : "text-accent"
+                      isDisqualified ? "text-destructive" : "text-accent"
                     )}
                   >
                     {isDisqualified ? "0.00" : entry.skore.toFixed(2)}
