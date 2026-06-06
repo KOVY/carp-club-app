@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { RefreshCw, Trophy, Share2, ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher"
 import { LigaTable } from "@/components/sezona/LigaTable"
 import { SwipeableContainer } from "@/components/common/SwipeableContainer"
 import { ErrorState } from "@/components/common/ErrorState"
@@ -83,13 +84,14 @@ export default function SezonaPage() {
         <div className="container py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+              <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2 text-foreground">
                 <Trophy className="h-6 w-6 text-primary" />
                 {AKTUALNI_SEZONA.nazev}
               </h1>
               <p className="text-sm text-muted-foreground">Průběžné pořadí</p>
             </div>
             <div className="flex items-center gap-2">
+              <ThemeSwitcher />
               <Button
                 variant="outline"
                 size="icon"
@@ -134,10 +136,10 @@ export default function SezonaPage() {
                 <button
                   onClick={() => setAktivniLiga("A")}
                   className={cn(
-                    "px-6 py-2 rounded-md text-sm font-medium transition-all",
+                    "px-6 py-2 rounded-md text-sm transition-all",
                     aktivniLiga === "A"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-background text-foreground shadow-sm font-semibold"
+                      : "font-medium text-muted-foreground hover:text-foreground"
                   )}
                   style={
                     aktivniLiga === "A"
@@ -151,10 +153,10 @@ export default function SezonaPage() {
                 <button
                   onClick={() => setAktivniLiga("B")}
                   className={cn(
-                    "px-6 py-2 rounded-md text-sm font-medium transition-all",
+                    "px-6 py-2 rounded-md text-sm transition-all",
                     aktivniLiga === "B"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-background text-foreground shadow-sm font-semibold"
+                      : "font-medium text-muted-foreground hover:text-foreground"
                   )}
                   style={
                     aktivniLiga === "B"
@@ -223,23 +225,23 @@ export default function SezonaPage() {
           <>
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="text-center p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold">{currentLiga.celkemTymu}</p>
-                <p className="text-xs text-muted-foreground">Týmů</p>
+              <div className="text-center p-3 rounded-xl bg-card border border-border shadow-sm">
+                <p className="text-3xl font-extrabold text-foreground">{currentLiga.celkemTymu}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Týmů</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold">
+              <div className="text-center p-3 rounded-xl bg-card border border-border shadow-sm">
+                <p className="text-3xl font-extrabold text-foreground">
                   {currentLiga.leaderboard.reduce((sum, e) => sum + e.pocetRyb, 0)}
                 </p>
-                <p className="text-xs text-muted-foreground">Úlovků</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Úlovků</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-muted/50">
-                <p className="text-2xl font-bold">
+              <div className="text-center p-3 rounded-xl bg-card border border-border shadow-sm">
+                <p className="text-3xl font-extrabold text-accent">
                   {currentLiga.leaderboard
                     .reduce((sum, e) => sum + e.skore, 0)
                     .toFixed(1)}
                 </p>
-                <p className="text-xs text-muted-foreground">kg celkem</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">kg celkem</p>
               </div>
             </div>
 
