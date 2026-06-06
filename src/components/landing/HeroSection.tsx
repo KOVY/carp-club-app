@@ -6,6 +6,16 @@ import { Button } from '@/components/ui/button'
 import { ChevronDown, Fish, Trophy, Users } from 'lucide-react'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 
+// Konfigurace plovoucích ryb — různé pozice, zpoždění, velikosti
+const FLOATING_FISH = [
+  { top: '18%', left: '7%',  size: 'w-14 h-14', delay: '0s',   rotate: '0deg'    },
+  { top: '28%', left: '88%', size: 'w-10 h-10', delay: '1.4s', rotate: '180deg'  },
+  { top: '55%', left: '4%',  size: 'w-8  h-8',  delay: '2.8s', rotate: '15deg'   },
+  { top: '65%', left: '82%', size: 'w-12 h-12', delay: '0.7s', rotate: '-10deg'  },
+  { top: '80%', left: '18%', size: 'w-7  h-7',  delay: '3.5s', rotate: '5deg'    },
+  { top: '15%', left: '55%', size: 'w-6  h-6',  delay: '2.1s', rotate: '-5deg'   },
+] as const
+
 interface HeroSectionProps {
   title?: string
   subtitle?: string
@@ -77,23 +87,21 @@ export function HeroSection({
         />
       </div>
 
-      {/* Floating icons - decorative */}
-      {!prefersReducedMotion && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <Fish 
-            className="absolute top-1/4 left-[10%] w-12 h-12 text-primary/20 animate-float-slow"
-            style={{ animationDelay: '0s' }}
+      {/* Plovoucí ryby — dekorativní, za obsahem, respektují reduced-motion */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-0" aria-hidden="true">
+        {FLOATING_FISH.map((fish, i) => (
+          <Fish
+            key={i}
+            className={`absolute ${fish.size} text-primary/[0.12] ${!prefersReducedMotion ? 'animate-float-slow' : ''}`}
+            style={{
+              top: fish.top,
+              left: fish.left,
+              animationDelay: fish.delay,
+              transform: `rotate(${fish.rotate})`,
+            }}
           />
-          <Trophy 
-            className="absolute top-1/3 right-[15%] w-10 h-10 text-accent/20 animate-float-slow"
-            style={{ animationDelay: '1s' }}
-          />
-          <Users 
-            className="absolute bottom-1/3 left-[20%] w-8 h-8 text-secondary/20 animate-float-slow"
-            style={{ animationDelay: '2s' }}
-          />
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 text-center">
@@ -104,12 +112,28 @@ export function HeroSection({
             <span>Oficiální systém Carp Club ČR</span>
           </div>
 
-          {/* Main headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight">
-            <span className="bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text">
-              {title}
-            </span>
-          </h1>
+          {/* Main headline — obaleno relative wrapper pro halo efekt */}
+          <div className="relative inline-block w-full">
+            {/*
+              Halo za nadpisem:
+              - Ve dne (--halo: transparent): radial-gradient přes hsl(var(--primary)/0.07)
+                → velmi jemný, neviditelný glow → nenarušuje čitelnost na slunci
+              - V noci (--halo: rgba(56,189,248,0.22)): box-shadow halo-card → tyrkysová záře
+              POZOR: efekt je ZA textem (z-index -1), text zůstává ostře čitelný v obou tématech
+            */}
+            <div
+              className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[130%] -mx-8 rounded-full halo-card pointer-events-none -z-10"
+              style={{
+                background: 'radial-gradient(ellipse at center, hsl(var(--primary) / 0.07) 0%, transparent 70%)',
+              }}
+              aria-hidden="true"
+            />
+            <h1 className="relative text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight">
+              <span className="bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
+                {title}
+              </span>
+            </h1>
+          </div>
 
           {/* Subtitle */}
           <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
@@ -121,7 +145,7 @@ export function HeroSection({
             <Button
               asChild
               size="lg"
-              className="text-lg px-8 py-6 hover-glow hover-scale bg-accent hover:bg-accent/90"
+              className="text-lg px-8 py-6 hover-glow hover-scale bg-accent text-accent-foreground hover:bg-accent/90"
             >
               <Link href={ctaHref}>
                 <Trophy className="w-5 h-5 mr-2" />
@@ -145,7 +169,7 @@ export function HeroSection({
             <Button
               asChild
               size="lg"
-              className="w-full text-lg py-6 hover-glow bg-accent hover:bg-accent/90"
+              className="w-full text-lg py-6 hover-glow bg-accent text-accent-foreground hover:bg-accent/90"
             >
               <Link href={ctaHref}>
                 <Trophy className="w-5 h-5 mr-2" />
