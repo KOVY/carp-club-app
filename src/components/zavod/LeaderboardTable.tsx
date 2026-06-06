@@ -181,23 +181,34 @@ function LeaderboardCard({ entry, position, weightsVisible, prahKaret = 3 }: Lea
     }
   }
 
+  const isLeader = position === 1 && !isDisqualified
+
   return (
     <div
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg border",
-        isDisqualified && "opacity-50 bg-destructive/5 border-destructive/20",
-        position <= 3 && !isDisqualified && "border-primary/20"
+        "flex items-center gap-3 rounded-lg border bg-card transition-shadow",
+        // Vedoucí: hrdina – halo (noc) / pevný okraj (den), vyšší padding pro váhu
+        isLeader && "halo-card border-primary p-4",
+        // Top 2-3: jemnější zvýraznění
+        position > 1 && position <= 3 && !isDisqualified && "border-primary/30 p-3",
+        // Zbytek
+        position > 3 && !isDisqualified && "border-border p-3",
+        // Diskvalifikace přebíjí vše
+        isDisqualified && "opacity-50 bg-destructive/5 border-destructive/20 p-3"
       )}
     >
       {/* Position */}
       <div
         className={cn(
-          "flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg flex-shrink-0",
-          getMedalColor(position)
+          "flex items-center justify-center rounded-full font-bold flex-shrink-0",
+          isLeader ? "w-12 h-12 text-xl" : "w-10 h-10 text-lg",
+          getMedalColor(position),
+          // Zlatá zář jen pro vedoucího
+          isLeader && "medal-glow-1"
         )}
       >
         {position <= 3 ? (
-          <Medal className="h-5 w-5" />
+          <Medal className={cn(isLeader ? "h-6 w-6" : "h-5 w-5")} />
         ) : (
           position
         )}
@@ -206,7 +217,13 @@ function LeaderboardCard({ entry, position, weightsVisible, prahKaret = 3 }: Lea
       {/* Team info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <p className={cn("font-medium truncate", isDisqualified && "line-through")}>
+          <p
+            className={cn(
+              "truncate",
+              isLeader ? "font-bold text-foreground" : "font-medium text-card-foreground",
+              isDisqualified && "line-through"
+            )}
+          >
             {tym.nazev}
           </p>
           {isDisqualified && (
@@ -233,11 +250,11 @@ function LeaderboardCard({ entry, position, weightsVisible, prahKaret = 3 }: Lea
         </div>
       </div>
 
-      {/* Score */}
+      {/* Score – váha jako hrdina (akcentní, velká, BEZ glow na číslech) */}
       {weightsVisible && (
         <div className="text-right flex-shrink-0">
           {isDisqualified ? (
-            <span className="text-destructive font-mono text-lg">0.00</span>
+            <span className="text-destructive font-mono text-xl font-extrabold">0.00</span>
           ) : (
             <AnimatedScore
               value={skore}
@@ -245,7 +262,10 @@ function LeaderboardCard({ entry, position, weightsVisible, prahKaret = 3 }: Lea
               duration={1500}
               delay={position * 100}
               animationKey={`${entry.tym.id}-${skore}`}
-              className="font-mono text-lg font-semibold"
+              className={cn(
+                "font-mono font-extrabold text-accent tabular-nums",
+                isLeader ? "text-2xl" : "text-xl"
+              )}
             />
           )}
           <p className="text-xs text-muted-foreground">kg</p>
@@ -273,18 +293,28 @@ function LeaderboardRow({ entry, position, weightsVisible, prahKaret = 3 }: Lead
     }
   }
 
+  const isLeader = position === 1 && !isDisqualified
+
   return (
     <TableRow
       className={cn(
         isDisqualified && "opacity-50 bg-destructive/5",
-        position <= 3 && "font-medium"
+        position <= 3 && !isDisqualified && "font-medium",
+        // Řádek vedoucího: jemné akcentní pozadí + levý akcent okraj, drží čitelnost
+        isLeader && "bg-primary/5 border-l-4 border-l-primary font-bold"
       )}
     >
       {/* Position */}
       <TableCell>
         <div className="flex items-center gap-1">
           {position <= 3 ? (
-            <Medal className={cn("h-5 w-5", getMedalColor(position))} />
+            <Medal
+              className={cn(
+                getMedalColor(position),
+                // Vedoucí: větší medaile + zlatá zář (kruh kolem ikony)
+                isLeader ? "h-7 w-7 rounded-full medal-glow-1" : "h-5 w-5"
+              )}
+            />
           ) : (
             <span className="text-muted-foreground w-5 text-center">
               {position}
@@ -296,7 +326,12 @@ function LeaderboardRow({ entry, position, weightsVisible, prahKaret = 3 }: Lead
       {/* Team name */}
       <TableCell>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={cn(isDisqualified && "line-through")}>
+          <span
+            className={cn(
+              isLeader && "text-foreground",
+              isDisqualified && "line-through"
+            )}
+          >
             {tym.nazev}
           </span>
           {isDisqualified && (
@@ -320,11 +355,11 @@ function LeaderboardRow({ entry, position, weightsVisible, prahKaret = 3 }: Lead
         </div>
       </TableCell>
 
-      {/* Score (if visible) */}
+      {/* Score (if visible) – váha jako hrdina, BEZ glow na číslech */}
       {weightsVisible && (
         <TableCell className="text-right font-mono">
           {isDisqualified ? (
-            <span className="text-destructive">0.00 kg</span>
+            <span className="text-destructive text-lg font-bold">0.00 kg</span>
           ) : (
             <AnimatedScore
               value={skore}
@@ -333,6 +368,10 @@ function LeaderboardRow({ entry, position, weightsVisible, prahKaret = 3 }: Lead
               duration={1500}
               delay={position * 100}
               animationKey={`${entry.tym.id}-${skore}`}
+              className={cn(
+                "font-bold text-accent tabular-nums",
+                isLeader ? "text-xl" : "text-lg"
+              )}
             />
           )}
         </TableCell>
