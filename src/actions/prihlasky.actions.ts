@@ -42,6 +42,13 @@ async function vytvoritTymProPrihlasku(
     tym_id: tymId, user_id: prihlaska.kapitan_user_id, role: 'kapitan',
   })
   if (memberErr) console.error('[vytvoritTymProPrihlasku] clen insert:', memberErr.message)
+  // Role do zavod_role — bez ní by kapitán neviděl tlačítko „Přidat úlovek“
+  // (AddCatchButton i detail závodu čtou roli výhradně ze zavod_role).
+  const { error: roleErr } = await adminClient.from('zavod_role').upsert(
+    { zavod_id: prihlaska.zavod_id, user_id: prihlaska.kapitan_user_id, role: 'kapitan' },
+    { onConflict: 'zavod_id,user_id', ignoreDuplicates: true },
+  )
+  if (roleErr) console.error('[vytvoritTymProPrihlasku] role insert:', roleErr.message)
   await adminClient.from('prihlasky').update({
     stav: 'schvaleno', tym_id: tymId, poradi_nahradnika: null, updated_at: new Date().toISOString(),
   }).eq('id', prihlaska.id)
