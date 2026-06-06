@@ -63,7 +63,7 @@ export function PotvrzeniList({
             Úlovky k potvrzení
           </GlassCardTitle>
           <GlassCardDescription>
-            Úlovky od sousedních týmů čekající na vaše potvrzení
+            Úlovky ostatních týmů čekající na vaše potvrzení
           </GlassCardDescription>
         </GlassCardHeader>
         <GlassCardContent>
@@ -71,7 +71,7 @@ export function PotvrzeniList({
             <Fish className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Žádné úlovky k potvrzení</p>
             <p className="text-sm mt-1">
-              Úlovky od sousedních pegů se zde zobrazí automaticky
+              Úlovky ostatních týmů se zde zobrazí automaticky
             </p>
           </div>
         </GlassCardContent>
@@ -90,7 +90,7 @@ export function PotvrzeniList({
           </StatusBadge>
         </GlassCardTitle>
         <GlassCardDescription>
-          Potvrďte úlovky od sousedních týmů
+          Potvrďte úlovky ostatních týmů
         </GlassCardDescription>
       </GlassCardHeader>
       <GlassCardContent className="space-y-4">
