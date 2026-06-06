@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { X, Fish, Home, Archive, LogOut, Trophy, CheckCircle, Image as ImageIcon, FileText, Settings, Users, Eye, Shield, Calendar } from "lucide-react"
+import { X, Fish, Home, Archive, LogOut, Trophy, CheckCircle, Image as ImageIcon, FileText, Settings, Users, Eye, Shield, Calendar, LogIn } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
 
@@ -174,9 +175,9 @@ export function MobileMenu({
       />
       
       {/* Menu panel with slide animation */}
-      <div 
+      <div
         className={cn(
-          "fixed inset-y-0 right-0 w-full max-w-xs bg-background shadow-lg transition-transform duration-300 ease-out",
+          "fixed inset-y-0 right-0 w-full max-w-xs glass-panel transition-transform duration-300 ease-out",
           isAnimating ? "translate-x-0" : "translate-x-full"
         )}
       >
@@ -198,15 +199,15 @@ export function MobileMenu({
             </Button>
           </div>
 
-          {/* User info (if logged in) */}
-          {user && (
+          {/* User info (if logged in) or login CTA */}
+          {user ? (
             <div className="p-4 border-b bg-muted/30">
               <div className="flex items-center space-x-3">
                 <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary">
                   {getUserInitials(user)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
+                  <p className="text-sm font-medium truncate text-foreground">
                     {user.name || user.email}
                   </p>
                   {user.name && (
@@ -216,6 +217,15 @@ export function MobileMenu({
                   )}
                 </div>
               </div>
+            </div>
+          ) : (
+            <div className="p-4 border-b bg-muted/30">
+              <Link href="/login" onClick={onClose}>
+                <Button className="w-full" variant="default">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Přihlásit se
+                </Button>
+              </Link>
             </div>
           )}
           
@@ -236,7 +246,7 @@ export function MobileMenu({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center space-x-3 px-3 py-3 rounded-lg transition-all duration-150",
+                    "flex items-center space-x-3 px-3 py-3.5 rounded-lg text-base transition-all duration-150",
                     isActive(item)
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-foreground/80 hover:bg-accent/50"
@@ -264,7 +274,7 @@ export function MobileMenu({
                       key={item.href + item.label}
                       href={item.href}
                       className={cn(
-                        "flex items-center space-x-3 px-3 py-3 rounded-lg transition-all duration-150",
+                        "flex items-center space-x-3 px-3 py-3.5 rounded-lg text-base transition-all duration-150",
                         isActive(item)
                           ? "bg-primary/10 text-primary font-medium"
                           : "text-foreground/80 hover:bg-accent/50"
@@ -287,9 +297,13 @@ export function MobileMenu({
             )}
           </nav>
           
-          {/* Footer - only show logout for logged-in users */}
-          {user && (
-            <div className="p-4 border-t">
+          {/* Footer - ThemeSwitcher vždy, odhlásit jen pro přihlášené */}
+          <div className="p-4 border-t space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Téma</span>
+              <ThemeSwitcher />
+            </div>
+            {user && (
               <Button
                 variant="outline"
                 className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors duration-150"
@@ -301,8 +315,8 @@ export function MobileMenu({
                 <LogOut className="h-4 w-4 mr-2" />
                 Odhlásit se
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
