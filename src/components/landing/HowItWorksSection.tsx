@@ -115,7 +115,7 @@ export function HowItWorksSection() {
             isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`}
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
             Jak to funguje
           </h2>
           <p className="text-muted-foreground text-lg">

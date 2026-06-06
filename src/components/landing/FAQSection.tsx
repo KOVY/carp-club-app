@@ -87,7 +87,7 @@ export function FAQSection() {
             <HelpCircle className="w-4 h-4" />
             <span>Často kladené dotazy</span>
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">
+          <h2 className="text-2xl md:text-3xl font-bold mb-4 text-foreground">
             Máte otázky? Máme odpovědi
           </h2>
           <p className="text-muted-foreground">

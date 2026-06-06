@@ -85,13 +85,13 @@ function ZavodCard({ zavod, isArchive = false }: { zavod: ZavodWithSoutez; isArc
   const stavBadge = getStavBadge(zavod.stav)
   
   return (
-    <Card className="hover-lift transition-all">
+    <Card className="hover-lift bg-card border-border transition-shadow duration-300 hover:shadow-halo">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg">{zavod.nazev}</CardTitle>
+            <CardTitle className="text-lg text-foreground">{zavod.nazev}</CardTitle>
             {zavod.souteze && (
-              <CardDescription>
+              <CardDescription className="text-muted-foreground">
                 Soutěž {zavod.souteze.nazev} {zavod.souteze.rok}
               </CardDescription>
             )}
@@ -106,7 +106,7 @@ function ZavodCard({ zavod, isArchive = false }: { zavod: ZavodWithSoutez; isArc
           <Calendar className="h-4 w-4" />
           <span>{formatDateRange(zavod.datum_start, zavod.datum_end)}</span>
         </div>
-        
+
         {zavod.misto && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4" />
@@ -149,7 +149,7 @@ export default async function Home() {
       {aktualni.length > 0 && (
         <section id="zavody" className="py-12 md:py-20 container mx-auto px-4 scroll-mt-20">
           <div className="flex items-center justify-between mb-6 md:mb-8">
-            <h2 className="text-xl md:text-3xl font-bold">
+            <h2 className="text-xl md:text-3xl font-bold text-foreground">
               Aktuální závody
             </h2>
           </div>
@@ -181,7 +181,7 @@ export default async function Home() {
       {archiv.length > 0 && (
         <section className="py-12 md:py-20 container mx-auto px-4 border-t border-border/50">
           <div className="flex items-center justify-between mb-6 md:mb-8">
-            <h2 className="text-xl md:text-3xl font-bold">
+            <h2 className="text-xl md:text-3xl font-bold text-foreground">
               Archiv závodů
             </h2>
             <Button asChild variant="ghost" size="sm" className="hover-underline">
@@ -201,9 +201,9 @@ export default async function Home() {
       )}
 
       {/* Footer CTA */}
-      <section className="py-20 md:py-32 text-center">
+      <section className="py-20 md:py-32 text-center border-t border-border/50">
         <div className="container mx-auto px-4 max-w-2xl">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
             Připraveni začít?
           </h2>
           <p className="text-muted-foreground text-lg mb-8">

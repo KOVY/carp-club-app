@@ -33,7 +33,7 @@ export function DemoPreviewSection() {
             <Fish className="w-4 h-4" />
             <span>Živá ukázka</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
             Podívejte se jak to funguje
           </h2>
           <p className="text-muted-foreground text-lg">
@@ -47,7 +47,7 @@ export function DemoPreviewSection() {
             isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`}
         >
-          <GlassCard className="overflow-hidden">
+          <GlassCard className="overflow-hidden transition-shadow duration-300 hover:shadow-halo">
             {/* Demo header */}
             <div className="p-6 border-b border-border/50">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -88,9 +88,13 @@ export function DemoPreviewSection() {
                   <div 
                     key={entry.tym.id}
                     className={`flex items-center gap-4 p-3 rounded-lg transition-all duration-300 ${
-                      index === 0 
-                        ? 'bg-primary/10 border border-primary/20' 
-                        : 'bg-muted/30 hover:bg-muted/50'
+                      index === 0
+                        ? 'bg-yellow-500/10 border border-yellow-500/20'
+                        : index === 1
+                          ? 'bg-muted/30 border border-border/30 hover:bg-muted/50'
+                          : index === 2
+                            ? 'bg-amber-600/10 border border-amber-600/20 hover:bg-amber-600/15'
+                            : 'bg-muted/30 hover:bg-muted/50'
                     }`}
                     style={{ 
                       transitionDelay: `${index * 100}ms`,
@@ -100,12 +104,12 @@ export function DemoPreviewSection() {
                   >
                     {/* Position */}
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                      index === 0 
-                        ? 'bg-primary text-primary-foreground' 
-                        : index === 1 
-                          ? 'bg-muted-foreground/20 text-foreground'
+                      index === 0
+                        ? 'bg-yellow-500/20 text-yellow-500'
+                        : index === 1
+                          ? 'bg-gray-400/20 text-gray-400'
                           : index === 2
-                            ? 'bg-amber-500/20 text-amber-600'
+                            ? 'bg-amber-600/20 text-amber-600'
                             : 'bg-muted text-muted-foreground'
                     }`}>
                       {entry.poradi}

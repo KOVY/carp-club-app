@@ -88,7 +88,7 @@ export function OrganizersSection() {
               <span>Pro organizátory</span>
             </div>
 
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-foreground">
               Pořádáte kaprařské závody?
             </h2>
 
@@ -146,7 +146,7 @@ export function OrganizersSection() {
               {organizerFeatures.map((feature, index) => (
                 <GlassCard
                   key={index}
-                  className="p-5 hover-lift cursor-pointer"
+                  className="p-5 hover-lift cursor-pointer transition-shadow duration-300 hover:shadow-halo"
                 >
                   <div className="flex items-start gap-4">
                     <div className="p-2 rounded-lg bg-primary/10 text-primary flex-shrink-0">

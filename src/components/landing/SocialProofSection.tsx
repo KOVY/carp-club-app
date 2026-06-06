@@ -80,7 +80,7 @@ function TestimonialCard({ testimonial, index, isVisible }: {
       }`}
       style={{ transitionDelay: `${index * 150}ms` }}
     >
-      <GlassCard className="h-full p-6 hover-lift cursor-pointer">
+      <GlassCard className="h-full p-6 hover-lift cursor-pointer transition-shadow duration-300 hover:shadow-halo">
         <div className="flex flex-col h-full">
           {/* Quote icon */}
           <Quote className="w-8 h-8 text-primary/30 mb-4" />
@@ -147,7 +147,7 @@ export function SocialProofSection() {
             isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`}
         >
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">
+          <h2 className="text-2xl md:text-3xl font-bold mb-4 text-foreground">
             Důvěřují nám organizátoři po celé ČR
           </h2>
           <p className="text-muted-foreground">

@@ -73,7 +73,7 @@ function FeatureCard({ feature, index }: FeatureCardProps) {
       }`}
       style={{ transitionDelay: `${index * 100}ms` }}
     >
-      <GlassCard className="h-full p-6 hover-lift">
+      <GlassCard className="h-full p-6 hover-lift transition-shadow duration-300 hover:shadow-halo">
         <div className="flex flex-col items-start gap-4">
           {/* Icon */}
           <div className="p-3 rounded-lg bg-primary/10 text-primary">
@@ -109,7 +109,7 @@ export function FeaturesSection() {
             isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`}
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
             Vše co potřebujete pro závod
           </h2>
           <p className="text-muted-foreground text-lg">
