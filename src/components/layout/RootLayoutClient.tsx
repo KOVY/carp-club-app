@@ -50,7 +50,7 @@ export function RootLayoutClient({ children }: RootLayoutClientProps) {
         {children}
       </main>
       <Footer className="hidden md:block" />
-      <div className="md:hidden text-center text-xs text-muted-foreground py-4 border-t">
+      <div className="md:hidden text-center text-xs text-muted-foreground py-4 border-t mb-16 md:mb-0">
         © {new Date().getFullYear()} Carp Club ČR
       </div>
       <GlobalBottomNavigation />
