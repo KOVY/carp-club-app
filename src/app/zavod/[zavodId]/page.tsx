@@ -16,7 +16,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { GlassCard, GlassCardContent, GlassCardDescription, GlassCardHeader, GlassCardTitle } from "@/components/ui/GlassCard"
 import { DataDisplay } from "@/components/ui/DataDisplay"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
-import { CompactLeaderboard, CompactBiggestFish, AddCatchButton, MapaPravidla } from "@/components/zavod"
+import { CompactLeaderboard, CompactBiggestFish, AddCatchButton, MapaPravidla, ChatPanel } from "@/components/zavod"
 import { PrihlasitButton } from "@/components/zavod/PrihlasitButton"
 import { StavPrihlaskyCard } from "@/components/zavod/StavPrihlaskyCard"
 import { getLeaderboard, getNejvetsiRyby } from "@/actions/leaderboard.actions"
@@ -463,6 +463,14 @@ export default async function ZavodPage({ params }: ZavodPageProps) {
           tymy={tymyForMap}
           userTymId={userTeam?.id}
           userPegCislo={userTeam?.peg_cislo}
+        />
+      )}
+
+      {/* Chat závodu — pouze pro přihlášené */}
+      {user && (
+        <ChatPanel
+          zavodId={zavodId}
+          canPrivolat={userTeam !== null || userRole !== null}
         />
       )}
     </div>

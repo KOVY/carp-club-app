@@ -15,3 +15,4 @@ export {
 export { AddCatchButton } from './AddCatchButton'
 export { TymoveUlovkyList } from './TymoveUlovkyList'
 export { MapaPravidla } from './MapaPravidla'
+export { ChatPanel } from './ChatPanel'
