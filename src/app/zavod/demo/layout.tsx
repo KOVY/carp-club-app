@@ -14,7 +14,8 @@ import {
   Sparkles,
   Plus,
   Clock,
-  Home
+  Home,
+  MessageCircle
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -49,6 +50,7 @@ export default function DemoLayout({ children }: DemoLayoutProps) {
     { href: `/zavod/${DEMO_ZAVOD_ID}/potvrzeni`, label: "Potvrzení", icon: <Clock className="h-4 w-4" /> },
     { href: `/zavod/${DEMO_ZAVOD_ID}/galerie`, label: "Galerie", icon: <ImageIcon className="h-4 w-4" /> },
     { href: `/zavod/${DEMO_ZAVOD_ID}/pravidla`, label: "Pravidla", icon: <FileText className="h-4 w-4" /> },
+    { href: `/zavod/${DEMO_ZAVOD_ID}/chat`, label: "Chat", icon: <MessageCircle className="h-4 w-4" /> },
   ]
 
   return (

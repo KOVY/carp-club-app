@@ -1,9 +1,10 @@
 import { Suspense } from "react"
-import { 
-  Calendar, 
-  MapPin, 
-  Clock, 
-  Users, 
+import Link from "next/link"
+import {
+  Calendar,
+  MapPin,
+  Clock,
+  Users,
   Fish,
   Trophy,
   AlertTriangle,
@@ -14,13 +15,14 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CompactLeaderboard, CompactBiggestFish, DemoProtectedButton } from "@/components/zavod"
 import { Loading } from "@/components/common/Loading"
-import { 
-  demoZavod, 
-  demoTymy, 
-  demoLeaderboard, 
+import {
+  demoZavod,
+  demoTymy,
+  demoLeaderboard,
   getDemoBiggestFish,
   getDemoConfirmedUlovky,
-  isDemoEmbargoActive 
+  isDemoEmbargoActive,
+  DEMO_ZAVOD_ID
 } from "@/lib/demo-data"
 
 /**
@@ -254,6 +256,25 @@ export default function DemoZavodPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Chat teaser */}
+      <Link href={`/zavod/${DEMO_ZAVOD_ID}/chat`} className="block">
+        <div className="bg-card border border-border rounded-xl p-4 hover:shadow-halo transition-shadow cursor-pointer">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-lg">
+              💬
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm">
+                💬 Závodní chat + 🔔 přivolání rozhodčího
+              </h3>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Podívej se, jak týmy komunikují a volají rozhodčího
+              </p>
+            </div>
+          </div>
+        </div>
+      </Link>
     </div>
   )
 }
