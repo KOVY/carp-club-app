@@ -88,7 +88,7 @@ export function HeroSection({
       </div>
 
       {/* Plovoucí ryby — dekorativní, za obsahem, respektují reduced-motion */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-0" aria-hidden="true">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10" aria-hidden="true">
         {FLOATING_FISH.map((fish, i) => (
           <Fish
             key={i}
@@ -129,7 +129,7 @@ export function HeroSection({
               aria-hidden="true"
             />
             <h1 className="relative text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-foreground via-foreground to-accent bg-clip-text text-transparent">
                 {title}
               </span>
             </h1>
