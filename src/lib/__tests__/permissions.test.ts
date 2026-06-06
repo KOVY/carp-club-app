@@ -19,18 +19,7 @@ function canSubmitUlovek(ctx: PermissionContext): boolean {
   return ctx.role === 'kapitan' || ctx.role === 'rozhodci' || ctx.role === 'poradatel';
 }
 
-function canConfirmUlovek(ctx: PermissionContext, ulovekTymPeg: number): boolean {
-  if (ctx.role === 'rozhodci' || ctx.role === 'poradatel') {
-    return true;
-  }
-  
-  if (ctx.role === 'kapitan' && ctx.pegCislo !== undefined) {
-    const diff = Math.abs(ctx.pegCislo - ulovekTymPeg);
-    return diff === 1;
-  }
-  
-  return false;
-}
+// canConfirmUlovek: testováno v permissions-confirm.test.ts proti skutečnému kódu (Fáze 3b).
 
 function canViewFullLeaderboard(ctx: PermissionContext, embargoActive: boolean): boolean {
   if (!embargoActive) {
@@ -101,41 +90,6 @@ describe('Permissions Module', () => {
     });
   });
 
-  describe('canConfirmUlovek', () => {
-    it('should allow rozhodci to confirm any catch (Requirement 8.5)', () => {
-      const ctx = createContext({ role: 'rozhodci' });
-      expect(canConfirmUlovek(ctx, 5)).toBe(true);
-      expect(canConfirmUlovek(ctx, 100)).toBe(true);
-    });
-
-    it('should allow poradatel to confirm any catch (Requirement 8.6)', () => {
-      const ctx = createContext({ role: 'poradatel' });
-      expect(canConfirmUlovek(ctx, 5)).toBe(true);
-    });
-
-    it('should allow kapitan to confirm neighbor peg (diff = 1)', () => {
-      const ctx = createContext({ role: 'kapitan', pegCislo: 5 });
-      expect(canConfirmUlovek(ctx, 4)).toBe(true); // peg-1
-      expect(canConfirmUlovek(ctx, 6)).toBe(true); // peg+1
-    });
-
-    it('should NOT allow kapitan to confirm non-neighbor peg', () => {
-      const ctx = createContext({ role: 'kapitan', pegCislo: 5 });
-      expect(canConfirmUlovek(ctx, 3)).toBe(false); // diff = 2
-      expect(canConfirmUlovek(ctx, 7)).toBe(false); // diff = 2
-      expect(canConfirmUlovek(ctx, 5)).toBe(false); // same peg
-    });
-
-    it('should NOT allow zavodnik to confirm catches', () => {
-      const ctx = createContext({ role: 'zavodnik', pegCislo: 5 });
-      expect(canConfirmUlovek(ctx, 4)).toBe(false);
-    });
-
-    it('should NOT allow divak to confirm catches', () => {
-      const ctx = createContext({ role: 'divak' });
-      expect(canConfirmUlovek(ctx, 5)).toBe(false);
-    });
-  });
 
   describe('canViewFullLeaderboard', () => {
     it('should allow everyone to view when embargo is NOT active', () => {
