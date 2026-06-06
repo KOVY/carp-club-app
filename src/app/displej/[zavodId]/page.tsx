@@ -11,8 +11,10 @@ import { LeaderboardTable } from "@/components/zavod"
 import { GlassCard, GlassCardContent } from "@/components/ui/GlassCard"
 import { createClient } from "@/lib/supabase/client"
 import { getLeaderboard, getNejvetsiRyby } from "@/actions/leaderboard.actions"
+import { getZpravy } from "@/actions/zpravy.actions"
+import { DisplejPrivolani } from "@/components/zavod/DisplejPrivolani"
 import { cn } from "@/lib/utils"
-import type { Zavod, LeaderboardEntry, UlovekWithRelations } from "@/lib/types"
+import type { Zavod, LeaderboardEntry, UlovekWithRelations, Zprava } from "@/lib/types"
 
 const REFRESH_MS = 15000
 
@@ -28,6 +30,7 @@ export default function DisplejPage() {
   const [error, setError] = useState<string | null>(null)
   const [now, setNow] = useState<number>(() => Date.now())
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [privolani, setPrivolani] = useState<Zprava[]>([])
 
   const fetchData = useCallback(async () => {
     try {
@@ -47,6 +50,16 @@ export default function DisplejPage() {
       }
       const bf = await getNejvetsiRyby(zavodId, 1)
       if (bf.success && bf.data) setBiggestFish(bf.data.ryby[0] || null)
+      try {
+        const zp = await getZpravy(zavodId)
+        if (zp.success && zp.data) {
+          setPrivolani(zp.data.filter((z) => z.typ === "privolani" && !z.vyrizeno))
+        } else {
+          setPrivolani([])
+        }
+      } catch {
+        setPrivolani([])
+      }
       setError(null)
     } catch (err) {
       console.error("Displej fetch error:", err)
@@ -246,8 +259,7 @@ export default function DisplejPage() {
             <BigFishHero fish={biggestFish} embargoActive={embargoActive} />
           </div>
 
-          {/* Placeholder pro DisplejPrivolani (Task 3) */}
-          {/* <DisplejPrivolani zavodId={zavodId} /> */}
+          <DisplejPrivolani privolani={privolani} />
         </aside>
       </main>
 
