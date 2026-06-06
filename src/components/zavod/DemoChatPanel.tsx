@@ -22,12 +22,12 @@ export function DemoChatPanel() {
   // Živý náznak: po ~3s přiteče nová zpráva + zvoneček pípne + zableskne
   useEffect(() => {
     if (firedRef.current) return
-    firedRef.current = true
     const prefersReduced =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
 
     const t = setTimeout(() => {
+      firedRef.current = true
       setZpravy((prev) => [...prev, demoChatIncoming])
       try {
         const AudioCtx =
