@@ -106,6 +106,10 @@ const config: Config = {
   			slow: '300ms'
   		},
   		keyframes: {
+  			'leader-pulse': {
+  				'0%,100%': { boxShadow: '0 0 18px rgba(251,146,60,0.35)' },
+  				'50%': { boxShadow: '0 0 28px rgba(251,146,60,0.6)' },
+  			},
   			'accordion-down': {
   				from: { height: '0' },
   				to: { height: 'var(--radix-accordion-content-height)' }
@@ -158,6 +162,7 @@ const config: Config = {
   			}
   		},
   		animation: {
+  			'leader-pulse': 'leader-pulse 2.5s ease-in-out infinite',
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			'fade-in-up': 'fade-in-up 0.3s var(--ease-out)',
@@ -169,7 +174,12 @@ const config: Config = {
   		},
   		backdropBlur: {
   			xs: '4px'
-  		}
+  		},
+  		boxShadow: {
+  			'halo': '0 0 28px var(--halo)',
+  			'leader': '0 0 24px rgba(251,146,60,0.45)',
+  			'glow-teal': '0 0 20px rgba(56,189,248,0.35)',
+  		},
   	}
   },
   plugins: [

@@ -211,6 +211,10 @@ html[data-theme="night"] body {
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
     font-weight: 600;
   }
+
+  /* Glow / Halo utility - POUZE pro kontejnery a akcenty, NE pro datová čísla */
+  .medal-glow-1 { box-shadow: 0 0 18px rgba(251,191,36,0.55); }   /* zlatá zář pro 🥇 */
+  .halo-card { box-shadow: 0 0 28px var(--halo); }                 /* night: glow; outdoor: --halo transparent → bez efektu */
 }
 
 /* ============================================
