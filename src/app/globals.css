@@ -23,42 +23,42 @@
 }
 
 /* ============================================
-   Outdoor / Denní režim - TMAVÉ POZADÍ (DEFAULT)
-   Pro viditelnost na slunci - vysoký kontrast
-   Den = tmavé pozadí, vysoký kontrast
+   Outdoor / Denní režim - SVĚTLÉ POZADÍ (DEFAULT)
+   Čitelné na slunci - vysoký kontrast, žádná průhlednost
+   Den = světlé pozadí, tmavý text
    ============================================ */
 :root,
 :root[data-theme="outdoor"] {
   /* Brand colors */
-  --primary: 174 62% 32%;           /* Teal #0D9488 */
+  --primary: 201 84% 24%;           /* #0c4a6e tmavě modrá */
   --primary-foreground: 0 0% 100%;
   --secondary: 213 52% 24%;         /* Tmavě modrá #1E3A5F */
   --secondary-foreground: 0 0% 100%;
-  --accent: 25 95% 53%;             /* Oranžová CTA #F97316 */
+  --accent: 21 90% 41%;             /* #c2410c oranžová */
   --accent-foreground: 0 0% 100%;
-  
-  /* Backgrounds - TMAVÉ */
-  --background: 222 47% 11%;        /* #0F172A */
-  --foreground: 210 40% 98%;        /* #F8FAFC */
-  --surface: 217 33% 17%;           /* #1E293B */
-  --surface-glass: rgba(30, 41, 59, 0.8);
-  
+
+  /* Backgrounds - SVĚTLÉ */
+  --background: 210 40% 98%;        /* #f8fafc */
+  --foreground: 201 84% 24%;        /* #0c4a6e */
+  --surface: 0 0% 100%;             /* bílá */
+  --surface-glass: #ffffff;         /* DEN: bez průhlednosti */
+
   /* Card */
-  --card: 217 33% 17%;
-  --card-foreground: 210 40% 98%;
-  
+  --card: 0 0% 100%;
+  --card-foreground: 201 84% 24%;
+
   /* Popover */
-  --popover: 217 33% 17%;
-  --popover-foreground: 210 40% 98%;
-  
+  --popover: 0 0% 100%;
+  --popover-foreground: 201 84% 24%;
+
   /* Muted */
-  --muted: 217 33% 17%;
-  --muted-foreground: 215 20% 65%;
-  
-  /* Text - SVĚTLÝ na tmavém pozadí */
-  --text-primary: 210 40% 98%;      /* #F8FAFC */
-  --text-secondary: 215 20% 80%;    /* #CBD5E1 */
-  --text-muted: 215 16% 60%;        /* #94A3B8 */
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 25% 35%;
+
+  /* Text - TMAVÝ na světlém pozadí */
+  --text-primary: 201 84% 24%;      /* #0c4a6e */
+  --text-secondary: 215 19% 35%;    /* #475569 */
+  --text-muted: 215 16% 47%;        /* #64748b */
 
   /* Status colors */
   --success: 142 71% 45%;           /* #22C55E */
@@ -69,56 +69,60 @@
   --error-foreground: 0 0% 100%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  
+
   /* Embargo */
   --embargo: 215 16% 47%;
   --embargo-foreground: 0 0% 100%;
-  
+
   /* Border & Input */
-  --border: 217 19% 27%;
-  --input: 217 19% 27%;
-  --ring: 174 62% 32%;
-  
+  --border: 201 84% 24%;            /* silný modrý okraj */
+  --input: 201 60% 80%;
+  --ring: 201 84% 24%;
+
+  /* Glow tokeny - DEN: bez glow (čitelnost na slunci) */
+  --halo: transparent;
+  --leader-glow: 0 0 0 transparent;
+
   --radius: 0.5rem;
 }
 
 /* ============================================
-   Night / Noční režim - SVĚTLÉ POZADÍ
-   Šetrné k očím v noci - tlumené barvy
-   Noc = světlé, tlumené barvy bez oslnění
+   Night / Noční režim - TMAVÉ POZADÍ
+   Šetrné k očím v noci - halo glow, jemné na oči
+   Noc = tmavé, tyrkysový/oranžový glow
    ============================================ */
 :root[data-theme="night"] {
-  /* Brand colors - tlumenější */
-  --primary: 174 58% 40%;           /* #14B8A6 */
-  --primary-foreground: 174 100% 6%;
+  /* Brand colors - tyrkys + zlato-oranžová */
+  --primary: 199 90% 60%;           /* #38bdf8 tyrkys */
+  --primary-foreground: 201 100% 6%;
   --secondary: 217 91% 60%;         /* #3B82F6 */
-  --secondary-foreground: 0 0% 100%;
-  --accent: 27 96% 61%;             /* #FB923C */
-  --accent-foreground: 0 0% 0%;
-  
-  /* Backgrounds - SVĚTLÉ */
-  --background: 210 40% 98%;        /* #F8FAFC */
-  --foreground: 222 47% 11%;        /* #0F172A */
-  --surface: 0 0% 100%;             /* Bílá */
-  --surface-glass: rgba(255, 255, 255, 0.8);
-  
+  --secondary-foreground: 201 100% 6%;
+  --accent: 27 96% 61%;             /* #fb923c zlato-oranžová */
+  --accent-foreground: 201 100% 6%;
+
+  /* Backgrounds - TMAVÉ */
+  --background: 201 72% 7%;         /* #04141f */
+  --foreground: 202 70% 95%;        /* #e8f4fb */
+  --surface: 201 50% 12%;
+  --surface-glass: rgba(255, 255, 255, 0.05);
+
   /* Card */
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  
+  --card: 201 50% 12%;
+  --card-foreground: 202 70% 95%;
+
   /* Popover */
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  
+  --popover: 201 50% 12%;
+  --popover-foreground: 202 70% 95%;
+
   /* Muted */
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
-  
-  /* Text - TMAVÝ na světlém pozadí */
-  --text-primary: 222 47% 11%;      /* #0F172A */
-  --text-secondary: 215 19% 35%;    /* #475569 */
-  --text-muted: 215 16% 60%;        /* #94A3B8 */
-  
+  --muted: 201 40% 16%;
+  --muted-foreground: 200 30% 60%;
+
+  /* Text - SVĚTLÝ na tmavém pozadí */
+  --text-primary: 202 70% 95%;      /* #e8f4fb */
+  --text-secondary: 200 50% 75%;
+  --text-muted: 200 30% 60%;
+
   /* Status colors */
   --success: 142 76% 36%;           /* #16A34A */
   --success-foreground: 0 0% 100%;
@@ -128,15 +132,19 @@
   --error-foreground: 0 0% 100%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
-  
+
   /* Embargo */
   --embargo: 220 9% 65%;
   --embargo-foreground: 0 0% 0%;
-  
+
   /* Border & Input */
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
-  --ring: 174 58% 40%;
+  --border: 199 60% 30%;
+  --input: 199 50% 25%;
+  --ring: 199 90% 60%;
+
+  /* Glow tokeny - NOC: halo glow */
+  --halo: rgba(56, 189, 248, 0.22);
+  --leader-glow: 0 0 24px rgba(251, 146, 60, 0.45);
 }
 
 @layer base {
@@ -153,14 +161,14 @@
 /* Explicitní přepsání barev pro témata - mimo @layer pro vyšší specificitu */
 html[data-theme="outdoor"],
 html[data-theme="outdoor"] body {
-  background-color: #0F172A !important;
-  color: #F8FAFC !important;
+  background-color: #f8fafc !important;
+  color: #0c4a6e !important;
 }
 
 html[data-theme="night"],
 html[data-theme="night"] body {
-  background-color: #F8FAFC !important;
-  color: #0F172A !important;
+  background-color: #04141f !important;
+  color: #e8f4fb !important;
 }
 
 /* ============================================
