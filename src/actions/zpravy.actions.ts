@@ -18,6 +18,24 @@ async function checkZavodAdminAccess(zavodId: string): Promise<string | null> {
   return (roles && roles.length > 0) ? user.id : null
 }
 
+/** Ověří, že user je účastníkem závodu (role v závodě NEBO člen týmu NEBO system admin).
+ * Brání cross-závod čtení/psaní chatu a přivolání od neúčastníků. */
+async function jeUcastnikZavodu(zavodId: string, userId: string): Promise<boolean> {
+  if (isSystemAdmin(userId)) return true
+  const adminClient = createAdminClient()
+  const { data: role } = await adminClient.from('zavod_role').select('id').eq('zavod_id', zavodId).eq('user_id', userId).maybeSingle()
+  if (role) return true
+  const { data: teams } = await adminClient.from('tymy').select('id').eq('zavod_id', zavodId)
+  const teamIds = (teams ?? []).map((t: any) => t.id)
+  if (teamIds.length > 0) {
+    const { data: m } = await adminClient.from('clenove_tymu').select('id').eq('user_id', userId).in('tym_id', teamIds).maybeSingle()
+    if (m) return true
+  }
+  return false
+}
+
+const MAX_ZPRAVA_DELKA = 2000
+
 /** Odeslat chatovou zprávu do závodu. */
 export async function odeslatZpravu(input: { zavodId: string; text: string }): Promise<ActionResult<{ zpravaId: string }>> {
   try {
@@ -25,6 +43,8 @@ export async function odeslatZpravu(input: { zavodId: string; text: string }): P
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: { code: ErrorCodes.UNAUTHORIZED, message: ErrorMessages[ErrorCodes.UNAUTHORIZED] } }
     if (!input.text?.trim()) return { success: false, error: { code: ErrorCodes.INVALID_INPUT, message: 'Prázdná zpráva' } }
+    if (input.text.length > MAX_ZPRAVA_DELKA) return { success: false, error: { code: ErrorCodes.INVALID_INPUT, message: 'Zpráva je příliš dlouhá (max 2000 znaků)' } }
+    if (!(await jeUcastnikZavodu(input.zavodId, user.id))) return { success: false, error: { code: ErrorCodes.FORBIDDEN, message: ErrorMessages[ErrorCodes.FORBIDDEN] } }
     const adminClient = createAdminClient()
     const { data, error } = await (adminClient.from('zpravy') as any).insert({
       zavod_id: input.zavodId, autor_user_id: user.id, typ: 'chat', text: input.text.trim(),
@@ -40,6 +60,7 @@ export async function privolatRozhodciho(zavodId: string): Promise<ActionResult<
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: { code: ErrorCodes.UNAUTHORIZED, message: ErrorMessages[ErrorCodes.UNAUTHORIZED] } }
+    if (!(await jeUcastnikZavodu(zavodId, user.id))) return { success: false, error: { code: ErrorCodes.FORBIDDEN, message: ErrorMessages[ErrorCodes.FORBIDDEN] } }
     const adminClient = createAdminClient()
     const { data: teams } = await adminClient.from('tymy').select('id, peg_cislo').eq('zavod_id', zavodId)
     const teamIds = (teams ?? []).map((t: any) => t.id)
@@ -59,6 +80,10 @@ export async function privolatRozhodciho(zavodId: string): Promise<ActionResult<
 /** Načíst zprávy závodu (s jménem autora). */
 export async function getZpravy(zavodId: string): Promise<ActionResult<Zprava[]>> {
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: { code: ErrorCodes.UNAUTHORIZED, message: ErrorMessages[ErrorCodes.UNAUTHORIZED] } }
+    if (!(await jeUcastnikZavodu(zavodId, user.id))) return { success: false, error: { code: ErrorCodes.FORBIDDEN, message: ErrorMessages[ErrorCodes.FORBIDDEN] } }
     const adminClient = createAdminClient()
     const { data } = await adminClient.from('zpravy')
       .select('*, autor:profiles!zpravy_autor_user_id_fkey(jmeno)')
