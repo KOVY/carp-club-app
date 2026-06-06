@@ -240,6 +240,19 @@ export interface Prihlaska {
   updated_at: string;
 }
 
+// Zprávy závodu (chat + přivolání)
+export interface Zprava {
+  id: string;
+  zavod_id: string;
+  autor_user_id: string;
+  typ: 'chat' | 'privolani';
+  text: string | null;
+  peg_cislo: number | null;
+  vyrizeno: boolean;
+  created_at: string;
+  autor_jmeno?: string;
+}
+
 // Barvy týmů
 export const TEAM_COLORS = [
   { name: 'Modrá', hex: '#3B82F6' },
