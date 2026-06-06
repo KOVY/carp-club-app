@@ -143,17 +143,7 @@ export function usePendingConfirmations({
           return
         }
 
-        // Get user's peg number
-        const userTeam = teamsData.find(t => t.id === membershipData.tym_id)
-        if (!userTeam || userTeam.peg_cislo === null) {
-          setCount(0)
-          setIsLoading(false)
-          return
-        }
-
-        const userPeg = userTeam.peg_cislo
-
-        // Filter to only neighbor pegs (peg ± 1) and exclude own team
+        // Fáze 3b: kapitán potvrzuje úlovky libovolných týmů (ne jen sousedního pegu)
         filteredCount = (ulovky as UlovekWithPotvrzeni[]).filter(u => {
           // Exclude own team's catches
           if (u.tym_id === membershipData.tym_id) {
@@ -168,14 +158,7 @@ export function usePendingConfirmations({
             return false
           }
 
-          // Check if catch is from neighbor peg
-          const catchTeam = teamsData.find(t => t.id === u.tym_id)
-          if (!catchTeam || catchTeam.peg_cislo === null) {
-            return false
-          }
-
-          const pegDiff = Math.abs(catchTeam.peg_cislo - userPeg)
-          return pegDiff === 1
+          return true
         }).length
       }
 
