@@ -94,13 +94,11 @@ export function Header({ user, onSignOut, floating }: HeaderProps) {
   return (
     <header
       className={cn(
-        "sticky z-50 w-full transition-all duration-200",
+        "sticky z-50 w-full transition-all duration-200 glass-bar",
+        isScrolled && "glass-bar-scrolled",
         floating
-          ? "top-4 mx-4 rounded-2xl border shadow-lg"
-          : "top-0 border-b",
-        isScrolled
-          ? "bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 shadow-sm"
-          : "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+          ? "top-4 mx-4 rounded-2xl border"
+          : "top-0"
       )}
     >
       <div className={cn(
@@ -110,7 +108,9 @@ export function Header({ user, onSignOut, floating }: HeaderProps) {
         {/* Left side - Logo */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center space-x-2 mr-8">
-            <Fish className="h-6 w-6 text-primary" />
+            <span className="animate-float-slow inline-block">
+              <Fish className="h-6 w-6 text-primary" />
+            </span>
             <span className="font-bold text-lg hidden sm:inline-block">
               Carp Club ČR
             </span>
@@ -125,7 +125,7 @@ export function Header({ user, onSignOut, floating }: HeaderProps) {
                 className={cn(
                   "px-4 py-2 text-sm font-medium rounded-md transition-colors duration-150",
                   isActive(item)
-                    ? "text-primary bg-primary/10"
+                    ? "text-primary bg-primary/10 nav-active-dot"
                     : "text-foreground/60 hover:text-foreground hover:bg-accent/50"
                 )}
               >

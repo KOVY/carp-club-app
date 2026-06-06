@@ -97,16 +97,16 @@ export function MobileHeader() {
     <>
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-200",
-          isScrolled
-            ? "bg-background/95 backdrop-blur-md shadow-sm border-b"
-            : "bg-transparent"
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-200 glass-bar",
+          isScrolled && "glass-bar-scrolled"
         )}
       >
         <div className="container flex h-14 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <Fish className="h-6 w-6 text-primary" />
+            <span className="animate-float-slow inline-block">
+              <Fish className="h-6 w-6 text-primary" />
+            </span>
             <span className={cn(
               "font-bold text-lg transition-colors",
               isScrolled ? "text-foreground" : "text-white"
