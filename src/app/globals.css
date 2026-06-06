@@ -662,9 +662,23 @@ html[data-theme="night"] body {
   }
 }
 
+/* Jemná plovoucí animace pro malá loga v liště */
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
 @layer utilities {
   .animate-float-slow {
     animation: float-slow 6s ease-in-out infinite;
+  }
+
+  .animate-float-gentle {
+    animation: float-gentle 4s ease-in-out infinite;
   }
 }
 
@@ -674,8 +688,12 @@ html[data-theme="night"] body {
     animation: none;
     background-size: 100% 100%;
   }
-  
+
   .animate-float-slow {
+    animation: none;
+  }
+
+  .animate-float-gentle {
     animation: none;
   }
 }

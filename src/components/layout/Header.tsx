@@ -108,7 +108,7 @@ export function Header({ user, onSignOut, floating }: HeaderProps) {
         {/* Left side - Logo */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center space-x-2 mr-8">
-            <span className="animate-float-slow inline-block">
+            <span className="animate-float-gentle inline-block">
               <Fish className="h-6 w-6 text-primary" />
             </span>
             <span className="font-bold text-lg hidden sm:inline-block">

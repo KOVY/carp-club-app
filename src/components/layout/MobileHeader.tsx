@@ -104,13 +104,10 @@ export function MobileHeader() {
         <div className="container flex h-14 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <span className="animate-float-slow inline-block">
+            <span className="animate-float-gentle inline-block">
               <Fish className="h-6 w-6 text-primary" />
             </span>
-            <span className={cn(
-              "font-bold text-lg transition-colors",
-              isScrolled ? "text-foreground" : "text-white"
-            )}>
+            <span className="font-bold text-lg text-foreground transition-colors">
               Carp Club
             </span>
           </Link>
@@ -122,10 +119,7 @@ export function MobileHeader() {
             <Button
               variant="ghost"
               size="icon"
-              className={cn(
-                "transition-colors",
-                !isScrolled && "text-white hover:bg-white/20"
-              )}
+              className="text-foreground transition-colors"
               onClick={() => setMobileMenuOpen(true)}
             >
               <Menu className="h-5 w-5" />
