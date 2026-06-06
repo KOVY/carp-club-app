@@ -5,14 +5,15 @@
  * Requirements: 5.1, 5.4
  */
 
-import type { 
-  Zavod, 
-  Tym, 
-  Profile, 
-  LeaderboardEntry, 
+import type {
+  Zavod,
+  Tym,
+  Profile,
+  LeaderboardEntry,
   UlovekWithRelations,
   TymWithRelations,
-  PotvrzeniWithRelations
+  PotvrzeniWithRelations,
+  Zprava
 } from '@/lib/types'
 
 // Demo závod ID constant
@@ -620,4 +621,54 @@ export function setDemoEmbargoActive(active: boolean): void {
 // Helper to check if a zavod ID is the demo
 export function isDemoZavod(zavodId: string): boolean {
   return zavodId === DEMO_ZAVOD_ID
+}
+
+/** Mock chat zprávy pro demo (živý náznak chatu + přivolání rozhodčího) */
+export const demoChat: Zprava[] = [
+  {
+    id: "demo-chat-1",
+    zavod_id: DEMO_ZAVOD_ID,
+    autor_user_id: "demo-user-1",
+    typ: "chat",
+    text: "Ahoj lidi, startujeme závod! 🎣",
+    peg_cislo: null,
+    vyrizeno: false,
+    created_at: "2024-06-15T06:15:00Z",
+    autor_jmeno: "Jan Novák",
+  },
+  {
+    id: "demo-chat-2",
+    zavod_id: DEMO_ZAVOD_ID,
+    autor_user_id: "demo-user-3",
+    typ: "privolani",
+    text: null,
+    peg_cislo: 3,
+    vyrizeno: false,
+    created_at: "2024-06-15T09:45:00Z",
+    autor_jmeno: "Petr Svoboda",
+  },
+  {
+    id: "demo-chat-3",
+    zavod_id: DEMO_ZAVOD_ID,
+    autor_user_id: "demo-user-2",
+    typ: "chat",
+    text: "Máme rybu, krásný kapr 8,4 kg! 💪",
+    peg_cislo: null,
+    vyrizeno: false,
+    created_at: "2024-06-15T10:05:00Z",
+    autor_jmeno: "Tomáš Dvořák",
+  },
+]
+
+/** Zpráva, která „přiteče" v živém náznaku po pár vteřinách */
+export const demoChatIncoming: Zprava = {
+  id: "demo-chat-live",
+  zavod_id: DEMO_ZAVOD_ID,
+  autor_user_id: "demo-user-4",
+  typ: "chat",
+  text: "Pozor, blíží se rozhodčí k pegu 5 👀",
+  peg_cislo: null,
+  vyrizeno: false,
+  created_at: "2024-06-15T10:12:00Z",
+  autor_jmeno: "Martin Černý",
 }
