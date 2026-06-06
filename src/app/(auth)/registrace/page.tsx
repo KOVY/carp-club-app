@@ -4,11 +4,12 @@ import { useState, useTransition, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signUpWithPassword, signInWithGoogle, resolveLandingPath } from '@/actions/auth.actions'
+import { safeReturnTo } from '@/lib/utils'
 
 function RegistraceForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const returnTo = searchParams.get('returnTo') || ''
+  const returnTo = safeReturnTo(searchParams.get('returnTo'))
   const [jmeno, setJmeno] = useState('')
   const [email, setEmail] = useState('')
   const [heslo, setHeslo] = useState('')
