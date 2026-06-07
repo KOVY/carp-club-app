@@ -5,10 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signUpWithPassword, signInWithGoogle, resolveLandingPath } from '@/actions/auth.actions'
 import { safeReturnTo } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 function RegistraceForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
   const returnTo = safeReturnTo(searchParams.get('returnTo'))
   const [jmeno, setJmeno] = useState('')
   const [email, setEmail] = useState('')
@@ -26,6 +28,10 @@ function RegistraceForm() {
         setError(r.error?.message || 'Registrace selhala')
         return
       }
+      toast({
+        title: 'Účet vytvořen 🎉',
+        description: `Jsi přihlášen jako ${jmeno.trim()}. Potvrzení jsme poslali na ${email.trim()}.`,
+      })
       if (returnTo) {
         router.push(returnTo)
       } else {

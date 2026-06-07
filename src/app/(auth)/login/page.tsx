@@ -5,10 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signInWithPassword, signInWithGoogle, resolveLandingPath } from '@/actions/auth.actions'
 import { safeReturnTo } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
   const returnTo = safeReturnTo(searchParams.get('returnTo'), '/')
 
   const [email, setEmail] = useState('')
@@ -25,6 +27,7 @@ function LoginForm() {
         setError(result.error?.message || 'Přihlášení se nezdařilo')
         return
       }
+      toast({ title: 'Vítej zpět 👋', description: 'Přihlášení proběhlo úspěšně.' })
       let dest = returnTo
       if (returnTo === '/') {
         const landing = await resolveLandingPath()
