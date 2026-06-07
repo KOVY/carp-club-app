@@ -22,6 +22,7 @@ export interface Database {
           email: string
           jmeno: string
           telefon: string | null
+          welcome_email_sent: boolean
           created_at: string
           updated_at: string
         }
@@ -30,6 +31,7 @@ export interface Database {
           email: string
           jmeno: string
           telefon?: string | null
+          welcome_email_sent?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -38,6 +40,7 @@ export interface Database {
           email?: string
           jmeno?: string
           telefon?: string | null
+          welcome_email_sent?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -137,7 +140,7 @@ export interface Database {
           id: string
           zavod_id: string
           nazev: string
-          kapitan_id: string
+          kapitan_id: string | null
           peg_cislo: number | null
           sektor_id: string | null
           zaplaceno: boolean

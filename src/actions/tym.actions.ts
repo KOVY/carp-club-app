@@ -215,11 +215,16 @@ export async function getTymDetail(tymId: string): Promise<ActionResult<TymWithC
     }
 
     // Získat kapitána (email/telefon ponecháno — pořadatel vidí kontakty v admin UI)
-    const { data: kapitan } = await adminClient
-      .from('profiles')
-      .select('id, jmeno, email, telefon')
-      .eq('id', tym.kapitan_id)
-      .single()
+    // kapitan_id může být NULL — účet kapitána mohl být smazán (ON DELETE SET NULL)
+    let kapitan = null
+    if (tym.kapitan_id) {
+      const { data } = await adminClient
+        .from('profiles')
+        .select('id, jmeno, email, telefon')
+        .eq('id', tym.kapitan_id)
+        .single()
+      kapitan = data
+    }
 
     // Získat členy s profily (email ponecháno — zobrazuje se v admin UI)
     const { data: clenoveData } = await adminClient
@@ -689,7 +694,7 @@ export async function copyTeamsFromZavod(
     const sourceTymy = sourceTymyData as Array<{
       id: string
       nazev: string
-      kapitan_id: string
+      kapitan_id: string | null
       barva: string | null
     }> | null
 
