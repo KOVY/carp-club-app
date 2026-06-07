@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import { isSystemAdmin } from '@/lib/constants'
 import { resolvePrihlaskaStav } from '@/lib/prihlasky-logic'
+import { sendPrihlaskaEmail, type PrihlaskaEmailVarianta } from '@/lib/email/resend'
 import type { ActionResult, Prihlaska } from '@/lib/types'
 
 /** Scope check: vrací userId pořadatele/admina daného závodu, jinak null. */
@@ -55,6 +56,38 @@ async function vytvoritTymProPrihlasku(
   return tymId
 }
 
+/**
+ * Interní: pošle kapitánovi e-mail o stavu přihlášky (přijata / náhradník / povýšen).
+ * Fire-and-forget — selhání jen zaloguje, nikdy nesmí ovlivnit výsledek akce.
+ */
+async function odeslatPrihlaskaEmail(
+  adminClient: any,
+  kapitanUserId: string,
+  zavodId: string,
+  tymNazev: string | null,
+  varianta: PrihlaskaEmailVarianta,
+): Promise<void> {
+  try {
+    const { data: profil } = await adminClient.from('profiles')
+      .select('jmeno, email').eq('id', kapitanUserId).single()
+    const { data: zavod } = await adminClient.from('zavody')
+      .select('nazev, misto, datum_start, datum_end').eq('id', zavodId).single()
+    if (!profil?.email || !zavod) return
+    await sendPrihlaskaEmail({
+      to: profil.email,
+      jmeno: profil.jmeno || profil.email.split('@')[0],
+      zavodNazev: zavod.nazev,
+      zavodMisto: zavod.misto,
+      zavodDatumStart: zavod.datum_start,
+      zavodDatumEnd: zavod.datum_end,
+      tymNazev,
+      varianta,
+    })
+  } catch (e) {
+    console.error('[odeslatPrihlaskaEmail]:', e)
+  }
+}
+
 /** Rybář se přihlásí na závod (založí tým jako kapitán). */
 export async function prihlasitNaZavod(
   zavodId: string, input: { nazevTymu: string; clenove?: string },
@@ -91,6 +124,9 @@ export async function prihlasitNaZavod(
       })
       if (tymId) finalStav = 'schvaleno'
     }
+    // Potvrzovací e-mail kapitánovi (přijat / náhradník)
+    await odeslatPrihlaskaEmail(adminClient, user.id, zavodId, input.nazevTymu.trim(),
+      finalStav === 'schvaleno' ? { typ: 'prijata' } : { typ: 'nahradnik', poradi: poradi ?? 1 })
     return { success: true, data: { prihlaskaId: created.id, stav: finalStav } }
   } catch (e) { return { success: false, error: toErrorResponse(e) } }
 }
@@ -117,9 +153,11 @@ async function promoteNahradnik(adminClient: any, zavodId: string): Promise<void
     .eq('zavod_id', zavodId).eq('stav', 'nahradnik').order('poradi_nahradnika', { ascending: true }).limit(1)
   if (!first || first.length === 0) return
   const p = first[0]
-  await vytvoritTymProPrihlasku(adminClient, {
+  const tymId = await vytvoritTymProPrihlasku(adminClient, {
     id: p.id, zavod_id: p.zavod_id, nazev_tymu: p.nazev_tymu, kapitan_user_id: p.kapitan_user_id,
   })
+  // E-mail povýšenému náhradníkovi
+  if (tymId) await odeslatPrihlaskaEmail(adminClient, p.kapitan_user_id, p.zavod_id, p.nazev_tymu, { typ: 'povysen' })
   const { data: rest } = await adminClient.from('prihlasky').select('id, poradi_nahradnika')
     .eq('zavod_id', zavodId).eq('stav', 'nahradnik').order('poradi_nahradnika', { ascending: true })
   for (const r of rest ?? []) await adminClient.from('prihlasky').update({ poradi_nahradnika: r.poradi_nahradnika - 1 }).eq('id', r.id)
@@ -161,6 +199,9 @@ export async function schvalitPrihlasku(prihlaskaId: string): Promise<ActionResu
     const res = await createTym({ zavodId: (p as any).zavod_id, nazev: (p as any).nazev_tymu, kapitanId: (p as any).kapitan_user_id })
     if (!res.success) return res as any
     await (adminClient.from('prihlasky') as any).update({ stav: 'schvaleno', tym_id: res.data!.tymId, updated_at: new Date().toISOString() }).eq('id', prihlaskaId)
+    // E-mail kapitánovi: náhradník byl povýšen, jinak standardní přijetí
+    await odeslatPrihlaskaEmail(adminClient, (p as any).kapitan_user_id, (p as any).zavod_id, (p as any).nazev_tymu,
+      (p as any).stav === 'nahradnik' ? { typ: 'povysen' } : { typ: 'prijata' })
     // I2: pokud byl schvalovaný náhradník, přečísluj zbylé náhradníky s vyšším pořadím o -1
     if ((p as any).stav === 'nahradnik') {
       const { data: rest } = await adminClient.from('prihlasky').select('id, poradi_nahradnika')

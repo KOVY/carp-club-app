@@ -18,6 +18,7 @@ import { ErrorCodes, ErrorMessages, toErrorResponse } from '@/lib/errors'
 import type { ActionResult, UserRole, ZavodRole, Tym, ClenTymu } from '@/lib/types'
 import { validateEmail, validatePassword, validateJmeno } from '@/lib/validators/auth'
 import { isSystemAdmin } from '@/lib/constants'
+import { sendWelcomeEmail } from '@/lib/email/resend'
 
 /**
  * Generate a one-time login code and send it to the user's email
@@ -386,6 +387,17 @@ export async function signUpWithPassword(input: {
       options: { data: { jmeno: input.jmeno.trim(), terms_accepted: 'true' } },
     })
     if (error) return { success: false, error: { code: ErrorCodes.DATABASE_ERROR, message: error.message } }
+    // Uvítací e-mail — vědomě s await (serverless by fire-and-forget utnul),
+    // ale selhání NESMÍ rozbít registraci, proto vlastní try/catch.
+    try {
+      const r = await sendWelcomeEmail({ to: input.email, jmeno: input.jmeno.trim() })
+      if (r.success) {
+        await (createAdminClient().from('profiles') as any)
+          .update({ welcome_email_sent: true }).eq('id', data.user!.id)
+      }
+    } catch (e) {
+      console.error('[signUpWithPassword] welcome email:', e)
+    }
     return { success: true, data: { userId: data.user!.id } }
   } catch (e) {
     return { success: false, error: toErrorResponse(e) }
